@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIOps Incident Dashboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f1115;
+        --panel: #171a21;
+        --muted: #9aa4b2;
+        --text: #e8eef7;
+        --accent: #5ac8fa;
+        --warn: #ffb020;
+        --ok: #34c759;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #222733;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0.02em;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      main {
+        padding: 20px 24px 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid #222733;
+        border-radius: 10px;
+        padding: 14px 14px;
+      }
+      .card h2 {
+        margin: 0 0 6px;
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .card p {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 650;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid #222733;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid #222733;
+        vertical-align: top;
+        font-size: 13px;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid #2a3140;
+        color: var(--muted);
+      }
+      .pill.blocked {
+        color: #ff7a7a;
+        border-color: #4a2a2a;
+      }
+      .pill.ok {
+        color: var(--ok);
+        border-color: #21462f;
+      }
+      button {
+        background: #243041;
+        color: var(--text);
+        border: 1px solid #2f3a52;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      button:hover {
+        border-color: #3b4b6b;
+      }
+      .error {
+        margin-top: 12px;
+        color: #ff8a8a;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Autonomous Incident Resolution</h1>
+        <div class="sub">History, guardrail outcomes, and MTTR (demo resolution time)</div>
+      </div>
+      <button type="button" id="refresh">Refresh</button>
+    </header>
+    <main>
+      <div class="cards">
+        <div class="card">
+          <h2>Incidents</h2>
+          <p id="kpi-count">—</p>
+        </div>
+        <div class="card">
+          <h2>Avg MTTR (ms)</h2>
+          <p id="kpi-mttr">—</p>
+        </div>
+        <div class="card">
+          <h2>Guardrail block rate</h2>
+          <p id="kpi-block">—</p>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Started</th>
+            <th>Title</th>
+            <th>Duration</th>
+            <th>Action</th>
+            <th>Guardrail</th>
+            <th>Report</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="error" id="err" hidden></div>
+    </main>
+    <script>
+      const API_BASE = "http://localhost:8000";
+
+      async function loadSummary() {
+        const res = await fetch(`${API_BASE}/metrics/summary`);
+        if (!res.ok) throw new Error(`summary ${res.status}`);
+        return res.json();
+      }
+
+      async function loadIncidents() {
+        const res = await fetch(`${API_BASE}/incidents`);
+        if (!res.ok) throw new Error(`incidents ${res.status}`);
+        return res.json();
+      }
+
+      function el(tag, text) {
+        const n = document.createElement(tag);
+        if (text !== undefined) n.textContent = text;
+        return n;
+      }
+
+      function render(incidents, summary) {
+        document.getElementById("kpi-count").textContent = String(summary.count ?? 0);
+        document.getElementById("kpi-mttr").textContent =
+          summary.mttr_ms_avg === null || summary.mttr_ms_avg === undefined
+            ? "—"
+            : String(summary.mttr_ms_avg);
+        document.getElementById("kpi-block").textContent =
+          summary.blocked_rate === null || summary.blocked_rate === undefined
+            ? "—"
+            : `${Math.round(summary.blocked_rate * 100)}%`;
+
+        const tbody = document.getElementById("rows");
+        tbody.innerHTML = "";
+        for (const row of incidents) {
+          const g = (row.graph || {}).guardrail_result || {};
+          const action = (row.graph || {}).action || {};
+          const tr = el("tr");
+          tr.appendChild(el("td", row.started_at || ""));
+          tr.appendChild(el("td", row.title || ""));
+          tr.appendChild(el("td", row.duration_ms === undefined ? "—" : `${row.duration_ms} ms`));
+          const tdAct = el("td");
+          tdAct.textContent = action.action || "—";
+          tr.appendChild(tdAct);
+          const tdG = el("td");
+          const pill = el("span", g.blocked ? "blocked" : "allowed");
+          pill.className = `pill ${g.blocked ? "blocked" : "ok"}`;
+          tdG.appendChild(pill);
+          tr.appendChild(tdG);
+          const tdR = el("td", (row.graph || {}).report || "");
+          tr.appendChild(tdR);
+          tbody.appendChild(tr);
+        }
+      }
+
+      async function refresh() {
+        const err = document.getElementById("err");
+        err.hidden = true;
+        try {
+          const [summary, incidents] = await Promise.all([loadSummary(), loadIncidents()]);
+          render(incidents, summary);
+        } catch (e) {
+          err.textContent =
+            `Could not reach API (${API_BASE}). Serve this folder with a static server or open after starting uvicorn. Details: ${e}`;
+          err.hidden = false;
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", refresh);
+      refresh();
+      setInterval(refresh, 8000);
+    </script>
+  </body>
+</html>

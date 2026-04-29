@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiops-platform"
+version = "0.1.0"
+description = "Autonomous incident resolution agent with RAG + LangGraph + deterministic guardrails"
+requires-python = ">=3.11"
+dependencies = [
+    # API
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-dotenv>=1.0.1",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+
+    # Database
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.29.0",
+    "alembic>=1.14.0",
+
+    # Agent / LLM
+    "langchain-core>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langchain-pinecone>=0.2.0",
+    "langgraph>=0.2.0",
+    "pinecone>=5.0.0",
+
+    # Messaging
+    "aiokafka>=0.11.0",
+
+    # HTTP client
+    "httpx>=0.28.0",
+
+    # Observability
+    "opentelemetry-api>=1.28.0",
+    "opentelemetry-sdk>=1.28.0",
+    "opentelemetry-instrumentation-fastapi>=0.49b0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "httpx>=0.28.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "evals*", "simulator*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--tb=short"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["tests/*", "evals/*"]

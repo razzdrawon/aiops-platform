@@ -1,4 +1,21 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: aiops_db
+    environment:
+      POSTGRES_USER: aiops_user
+      POSTGRES_PASSWORD: aiops_pass
+      POSTGRES_DB: aiops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiops_user -d aiops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
     hostname: zookeeper
@@ -25,14 +42,12 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
-  # Optional: run the API from a container after building an image; local `uvicorn` is the default dev path.
-  # Uncomment and add a Dockerfile if you prefer everything in Compose.
-  # app:
-  #   build: .
-  #   depends_on:
-  #     - kafka
-  #   env_file: .env
-  #   ports:
-  #     - "8000:8000"
-  #   command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+volumes:
+  postgres_data:

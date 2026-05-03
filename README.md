@@ -11,50 +11,117 @@ E-commerce platforms lose revenue every minute an incident stays open. This syst
 ## What it does
 
 | Stage | What happens |
-|-------|-------------|
+|---|---|
 | **Ingest** | Kafka consumer ingests streaming logs, metrics, and OTel traces from a live e-commerce simulator |
 | **Correlate** | Events grouped by `trace_id` before diagnosis — signal quality over noise |
 | **Diagnose** | LLM + RAG over Pinecone runbook index identifies root cause with a confidence score |
-| **Gate** | Deterministic guardrails block destructive actions if `confidence < 0.85` — LLM proposes, rules decide |
+| **Gate** | Deterministic guardrails block destructive actions if `confidence ≤ 0.85` — LLM proposes, rules decide |
 | **Act** | Agent executes rollback / restart / scale via tool registry; reports resolution |
+| **Persist** | Every incident stored in PostgreSQL — MTTR and block rate computed from real data |
+
+---
 
 ## Stack
 
-**Python · FastAPI · Kafka · LangGraph · Pinecone · OpenAI · OpenTelemetry · Docker**
+**Python 3.11 · FastAPI · PostgreSQL · SQLAlchemy (async) · Kafka · LangGraph · Pinecone · OpenAI · Docker**
+
+---
 
 ## Sample response
 
 ```json
 {
-  "incident_id": "inc-7f3a1b",
+  "incident_id": "fdb8936e-9a22-46fc-994d-de877f8eb500",
   "status": "resolved",
-  "diagnosis": {
-    "root_cause": "connection pool exhaustion on checkout-db",
-    "confidence": 0.91,
-    "runbook_refs": ["db-pool-exhaustion.md", "checkout-slo.md"]
-  },
-  "action_taken": {
-    "tool": "restart_service",
-    "destructive": true,
-    "guardrail": "PASSED — confidence 0.91 ≥ 0.85"
-  },
-  "mttr_seconds": 38
+  "duration_ms": 13386,
+  "graph": {
+    "detector": { "classification": "high_error_rate", "severity_hint": "high" },
+    "diagnosis": {
+      "suspected_root_cause": "bad deployment or downstream dependency timeout",
+      "matched_runbook_titles": ["high-error-rate.md"],
+      "confidence": 0.8
+    },
+    "action": { "action": "create_pr_fix", "destructive": false, "confidence": 0.8 },
+    "guardrail_result": { "blocked": false, "reason": "ok" },
+    "execution": { "tool": "create_pr_fix", "message": "PR opened (mock)" }
+  }
 }
 ```
+
+---
 
 ## Quick start
 
 ```bash
-cp .env.example .env          # Add OPENAI_API_KEY, PINECONE_API_KEY
-pip install -r requirements.txt
-docker compose up -d           # Kafka + Zookeeper
-python -m knowledge.indexer    # Index runbooks into Pinecone
+# 1. Clone and install
+git clone git@github.com:razzdrawon/aiops-platform.git
+cd aiops-platform
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# 2. Start PostgreSQL
+docker-compose up -d db
+alembic upgrade head
+
+# 3. Run the API (offline mode — no API keys needed)
+uvicorn app.api.main:app --port 8000 --reload
+
+# 4. Trigger an incident
+curl -s -X POST http://localhost:8000/incident \
+  -H "Content-Type: application/json" \
+  -d '{"title": "High error rate on checkout", "signals": {"error_rate": 0.12}}' \
+  | python3 -m json.tool
 ```
 
-Then run simulator, ingestion consumer, and API in separate terminals — see [docs/local-setup.md](docs/local-setup.md).
+For LLM mode, add `OPENAI_API_KEY` and `PINECONE_API_KEY` to `.env` and run `python -m app.knowledge.indexer` once to index the runbooks.
+
+---
+
+## Architecture
+
+```
+API (FastAPI)
+  ↓
+LangGraph Pipeline
+  detector → diagnoser → action_selector → guardrail → executor → reporter
+  ↓
+Domain Layer (pure Python — no LLM, no DB)
+  ↓
+Repository (abstract interface)
+  ↓
+Infrastructure (SQLAlchemy + PostgreSQL)
+```
+
+The guardrail node is deterministic Python — the LLM cannot override it.  
+The pipeline runs fully offline (heuristic mode) when API keys are absent.
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/incident` | Run the full agent pipeline and persist the result |
+| `GET` | `/incidents` | List all incidents |
+| `GET` | `/incidents/{id}` | Get a single incident with full pipeline output |
+| `GET` | `/metrics/summary` | MTTR average and guardrail block rate |
+| `GET` | `/health` | Health check |
+
+---
+
+## Roadmap
+
+| Phase | Focus | Status |
+|---|---|---|
+| 1 — Foundation | Clean architecture, PostgreSQL persistence, tests, CI | ✅ Complete |
+| 2 — Evaluation Framework | Synthetic cases, accuracy/precision/recall measurement | ⏳ Next |
+| 3 — Agent Observability | Token usage, cost per incident, latency per node | ⏳ Pending |
+| 4 — Streaming + Integrations | SSE streaming, PagerDuty webhooks, Slack notifications | ⏳ Pending |
+
+---
 
 ## Docs
 
-- [Architecture & design decisions](docs/architecture.md)
-- [Guardrails design](docs/guardrails.md)
-- [Local setup](docs/local-setup.md)
+- [Architecture evolution](docs/architecture-evolution.md)
+- [Technical decisions](docs/technical-decisions.md)
+- [Validation guide](docs/validation-guide.md)

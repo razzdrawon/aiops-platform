@@ -1,21 +1,20 @@
 """
-FastAPI control plane: trigger the LangGraph remediation pipeline and expose incident history for the dashboard.
+FastAPI control plane: trigger the LangGraph remediation pipeline and expose
+incident history for the dashboard.
 """
-
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timezone
 from typing import Any
 
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.graph import run_incident_graph
-
-load_dotenv()
+from app.infrastructure.database import get_session
+from app.repositories.incident_repository import SQLAlchemyIncidentRepository
 
 app = FastAPI(title="AIOps Control API", version="0.1.0")
 app.add_middleware(
@@ -32,58 +31,101 @@ class IncidentRequest(BaseModel):
     signals: dict[str, Any] = Field(default_factory=dict)
 
 
-_history: list[dict[str, Any]] = []
-_history_lock = asyncio.Lock()
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok", "ts": datetime.now(timezone.utc).isoformat()}
 
 
 @app.post("/incident")
-async def create_incident(body: IncidentRequest):
+async def create_incident(
+    body: IncidentRequest,
+    session: AsyncSession = Depends(get_session),
+):
     started = datetime.now(timezone.utc)
     try:
         result = await run_incident_graph(body.title, body.signals)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
     finished = datetime.now(timezone.utc)
-    record = {
+    duration_ms = int((finished - started).total_seconds() * 1000)
+
+    repo = SQLAlchemyIncidentRepository(session)
+    record = await repo.save(dict(result))
+
+    return {
+        "incident_id": str(record.id),
         "started_at": started.isoformat(),
         "finished_at": finished.isoformat(),
-        "duration_ms": int((finished - started).total_seconds() * 1000),
-        "title": body.title,
-        "signals": body.signals,
+        "duration_ms": duration_ms,
+        "title": record.title,
+        "status": record.status,
         "graph": result,
     }
-    async with _history_lock:
-        _history.insert(0, record)
-    return record
 
 
 @app.get("/incidents")
-async def list_incidents():
-    async with _history_lock:
-        return list(_history)
+async def list_incidents(session: AsyncSession = Depends(get_session)):
+    repo = SQLAlchemyIncidentRepository(session)
+    records = await repo.get_all()
+    return [
+        {
+            "incident_id": str(r.id),
+            "title": r.title,
+            "status": r.status,
+            "severity": r.severity,
+            "created_at": r.created_at.isoformat(),
+            "resolved_at": r.resolved_at.isoformat() if r.resolved_at else None,
+        }
+        for r in records
+    ]
 
 
-@app.get("/metrics/summary")
-async def metrics_summary():
-    async with _history_lock:
-        rows = list(_history)
-    if not rows:
-        return {"count": 0, "mttr_ms_avg": None, "blocked_rate": None}
-    mttr_vals = [r["duration_ms"] for r in rows if r.get("duration_ms") is not None]
-    blocked = sum(
-        1
-        for r in rows
-        if (r.get("graph") or {}).get("guardrail_result", {}).get("blocked")
-    )
+@app.get("/incidents/{incident_id}")
+async def get_incident(
+    incident_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    import uuid
+    repo = SQLAlchemyIncidentRepository(session)
+    record = await repo.get_by_id(uuid.UUID(incident_id))
+    if not record:
+        raise HTTPException(status_code=404, detail="Incident not found")
     return {
-        "count": len(rows),
-        "mttr_ms_avg": int(sum(mttr_vals) / len(mttr_vals)) if mttr_vals else None,
-        "blocked_rate": blocked / len(rows),
+        "incident_id": str(record.id),
+        "title": record.title,
+        "status": record.status,
+        "severity": record.severity,
+        "signals": record.signals,
+        "detector": record.detector,
+        "diagnosis": record.diagnosis,
+        "action": record.action,
+        "guardrail": record.guardrail,
+        "execution": record.execution,
+        "report": record.report,
+        "created_at": record.created_at.isoformat(),
+        "resolved_at": record.resolved_at.isoformat() if record.resolved_at else None,
     }
 
 
+@app.get("/metrics/summary")
+async def metrics_summary(session: AsyncSession = Depends(get_session)):
+    repo = SQLAlchemyIncidentRepository(session)
+    records = await repo.get_all()
+    if not records:
+        return {"count": 0, "mttr_ms_avg": None, "blocked_rate": None}
+
+    blocked = sum(1 for r in records if r.status == "blocked")
+    resolved = [
+        r for r in records
+        if r.resolved_at and r.created_at
+    ]
+    mttr_vals = [
+        (r.resolved_at - r.created_at).total_seconds()
+        for r in resolved
+    ]
+    return {
+        "count": len(records),
+        "mttr_seconds_avg": round(sum(mttr_vals) / len(mttr_vals), 1) if mttr_vals else None,
+        "blocked_rate": round(blocked / len(records), 3),
+    }

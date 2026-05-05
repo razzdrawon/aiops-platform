@@ -1,0 +1,200 @@
+[
+  {
+    "id": "hbr-001",
+    "incident_class": "high_error_rate",
+    "title": "High error rate on checkout service",
+    "signals": { "error_rate": 0.12, "service": "checkout" },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Error rate above 5% threshold — rollback proposed but confidence 0.7 < 0.85 → blocked"
+  },
+  {
+    "id": "hbr-002",
+    "incident_class": "high_error_rate",
+    "title": "5xx spike on payment processor",
+    "signals": { "error_rate": 0.25, "service": "payments" },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Severe error rate — same heuristic path, still blocked"
+  },
+  {
+    "id": "hbr-003",
+    "incident_class": "high_error_rate",
+    "title": "Error rate detected on order service",
+    "signals": { "error_rate": 0.06, "service": "orders" },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Just above threshold — rollback blocked"
+  },
+  {
+    "id": "hbr-004",
+    "incident_class": "high_error_rate",
+    "title": "High error rate alert triggered",
+    "signals": { "error_rate": 0.18, "p99_ms": 2000, "service": "api-gateway" },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Mixed signals — error_rate takes priority over latency"
+  },
+  {
+    "id": "dep-001",
+    "incident_class": "deploy_failure",
+    "title": "Deploy failure on staging environment",
+    "signals": { "deploy_failed": true, "service": "checkout" },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Deploy failure → rollback proposed, blocked due to low confidence"
+  },
+  {
+    "id": "dep-002",
+    "incident_class": "deploy_failure",
+    "title": "Deployment rollout failed on production",
+    "signals": { "deploy_failed": true, "service": "inventory" },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Production deploy failure — same path"
+  },
+  {
+    "id": "dep-003",
+    "incident_class": "deploy_failure",
+    "title": "Canary deploy failure detected",
+    "signals": { "deploy_failed": true, "error_rate": 0.09, "service": "recommendations" },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Deploy failure takes priority over error_rate signal"
+  },
+  {
+    "id": "dep-004",
+    "incident_class": "deploy_failure",
+    "title": "CI/CD pipeline deploy failed",
+    "signals": { "deploy_failed": true },
+    "expected_action": "rollback",
+    "expected_blocked": true,
+    "description": "Minimal signals — deploy_failed is enough to classify"
+  },
+  {
+    "id": "lat-001",
+    "incident_class": "latency_spike",
+    "title": "Latency spike on payment service",
+    "signals": { "p95_ms": 2000, "service": "payments" },
+    "expected_action": "scale_up",
+    "expected_blocked": false,
+    "description": "High latency → scale_up (non-destructive, confidence 0.72) → allowed"
+  },
+  {
+    "id": "lat-002",
+    "incident_class": "latency_spike",
+    "title": "P99 latency degradation on checkout",
+    "signals": { "p95_ms": 3500, "service": "checkout" },
+    "expected_action": "scale_up",
+    "expected_blocked": false,
+    "description": "Severe latency — scale_up allowed"
+  },
+  {
+    "id": "lat-003",
+    "incident_class": "latency_spike",
+    "title": "Slow response times on search service",
+    "signals": { "p95_ms": 1600, "service": "search" },
+    "expected_action": "scale_up",
+    "expected_blocked": false,
+    "description": "Just above 1500ms threshold"
+  },
+  {
+    "id": "lat-004",
+    "incident_class": "latency_spike",
+    "title": "Latency spike detected on API gateway",
+    "signals": { "p95_ms": 4200, "p99_ms": 8000, "service": "api-gateway" },
+    "expected_action": "scale_up",
+    "expected_blocked": false,
+    "description": "Extreme latency — scale_up still the right call"
+  },
+  {
+    "id": "db-001",
+    "incident_class": "db_overload",
+    "title": "Database CPU overload on checkout-db",
+    "signals": { "db_cpu": 95, "service": "checkout" },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "DB overload → no strong heuristic action → noop (safe)"
+  },
+  {
+    "id": "db-002",
+    "incident_class": "db_overload",
+    "title": "Database connection pool exhausted",
+    "signals": { "db_cpu": 88, "db_connections": 500, "service": "orders" },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "Connection pool issue — heuristic defaults to noop"
+  },
+  {
+    "id": "db-003",
+    "incident_class": "db_overload",
+    "title": "High database load detected",
+    "signals": { "db_cpu": 72, "service": "analytics" },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "Moderate DB load — noop is the safe choice"
+  },
+  {
+    "id": "db-004",
+    "incident_class": "db_overload",
+    "title": "Database query latency spike",
+    "signals": { "db_cpu": 91, "query_latency_ms": 5000, "service": "search" },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "Mixed DB signals — noop"
+  },
+  {
+    "id": "oom-001",
+    "incident_class": "oom",
+    "title": "OOM killed on worker pod",
+    "signals": { "oom": true, "service": "worker" },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "OOM → no confident heuristic action → noop"
+  },
+  {
+    "id": "oom-002",
+    "incident_class": "oom",
+    "title": "Container OOM restart loop detected",
+    "signals": { "oom": true, "restart_count": 5, "service": "checkout" },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "Repeated OOM restarts — noop without high confidence"
+  },
+  {
+    "id": "oom-003",
+    "incident_class": "oom",
+    "title": "Memory limit exceeded on search pods",
+    "signals": { "oom": true, "memory_mb": 4096, "service": "search" },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "OOM with memory details — still noop"
+  },
+  {
+    "id": "unk-001",
+    "incident_class": "unknown",
+    "title": "Unusual metric pattern detected",
+    "signals": { "cpu": 45, "disk_io": 80 },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "No recognizable signal pattern → unknown class → noop"
+  },
+  {
+    "id": "unk-002",
+    "incident_class": "unknown",
+    "title": "Anomaly detected in telemetry",
+    "signals": { "anomaly_score": 0.9 },
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "Unknown signal type — noop"
+  },
+  {
+    "id": "unk-003",
+    "incident_class": "unknown",
+    "title": "System alert triggered",
+    "signals": {},
+    "expected_action": "noop",
+    "expected_blocked": false,
+    "description": "Empty signals — unknown class → noop"
+  }
+]

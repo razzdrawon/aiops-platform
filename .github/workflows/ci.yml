@@ -50,3 +50,9 @@ jobs:
         run: |
           alembic upgrade head
           pytest tests/integration/ -v --cov=app --cov-fail-under=70
+
+      - name: Run eval suite (offline mode)
+        env:
+          OPENAI_API_KEY: ""
+          PINECONE_API_KEY: ""
+        run: python -m evals.runner

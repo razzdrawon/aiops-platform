@@ -122,6 +122,23 @@ Absolute imports under a single namespace work from anywhere.
 
 ---
 
+## 8. Eval suite targets heuristic mode, not LLM mode
+
+The eval cases in `evals/cases/cases.json` define expected actions based on the **heuristic pipeline** (offline mode). This is intentional.
+
+LLM outputs are non-deterministic — running the same incident twice can yield different confidence scores, different action choices. A test suite that depends on LLM outputs is not a test suite; it's a flaky sample.
+
+By targeting the heuristic pipeline:
+- CI can run the eval suite with `OPENAI_API_KEY=""` and get **100% deterministic results**
+- Any change to the detector, action selector, or guardrail logic that breaks expected behavior fails the build immediately
+- The baseline is stable — regressions are unambiguous
+
+The **LLM accuracy gap** (heuristic: 100%, LLM: 4.5% on these cases) is a known design artifact, not a bug. The LLM cases will be tracked separately once Phase 3 adds per-node observability to understand where the gap comes from.
+
+**Key terms:** Eval Framework, Deterministic Baseline, Offline Mode, Regression Testing.
+
+---
+
 ## Glossary
 
 | Term | Definition |

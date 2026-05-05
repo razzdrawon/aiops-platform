@@ -131,6 +131,59 @@ Restart the API and trigger incidents — the diagnoser will now use RAG + GPT i
 
 ---
 
+---
+
+## Phase 2 — Evaluation Framework
+
+### Run the eval suite (offline mode — no API keys needed)
+
+```bash
+OPENAI_API_KEY="" PINECONE_API_KEY="" python -m evals.runner
+```
+
+Expected output:
+```
+Running 22 eval cases (offline/heuristic mode)...
+
+  [ 1/22] hbr-001    High error rate on checkout service              ✓  (Xms)
+  ...
+  [22/22] unk-003    System alert triggered                           ✓  (Xms)
+
+============================================================
+  EVAL REPORT
+============================================================
+  Total cases       : 22
+  Action accuracy   : 100.0%
+  Blocked accuracy  : 100.0%
+  Overall accuracy  : 100.0%
+  ...
+```
+
+All 22 cases should pass. Any failure indicates a regression in the heuristic pipeline.
+
+### Save results for comparison
+
+```bash
+OPENAI_API_KEY="" PINECONE_API_KEY="" python -m evals.runner --output baseline.json
+```
+
+After making changes, run again and compare:
+
+```bash
+OPENAI_API_KEY="" PINECONE_API_KEY="" python -m evals.runner --output current.json
+python -m evals.report baseline.json current.json
+```
+
+### Run with LLM mode (optional — requires API keys)
+
+```bash
+python -m evals.runner
+```
+
+Expected: lower accuracy (~4–10%) because the LLM makes different decisions than the heuristic expectations. This is by design — the LLM cases will be tracked separately in Phase 3.
+
+---
+
 ## Terminals summary
 
 | Terminal | What runs |

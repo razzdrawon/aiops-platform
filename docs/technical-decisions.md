@@ -122,7 +122,25 @@ Absolute imports under a single namespace work from anywhere.
 
 ---
 
-## 8. Eval suite targets heuristic mode, not LLM mode
+## 8. trace como JSONB en incidents en lugar de tabla llm_calls separada
+
+El plan original consideraba una tabla `llm_calls` separada en PostgreSQL para registrar tokens, costo y latencia por llamada LLM. Se eligió JSONB en la tabla `incidents` en cambio.
+
+**Por qué JSONB gana aquí:**
+
+El patrón de lectura es siempre el mismo — cuando lees un incidente, lees su trace junto con él. Nunca necesitas el trace sin el incidente. Una tabla `llm_calls` separada tendría sentido si necesitaras consultar llamadas LLM de forma independiente (por ejemplo, "dame todas las llamadas al diagnoser de los últimos 7 días" para análisis de drift de costos). Ese caso de uso no existe en el scope actual.
+
+Con JSONB:
+- Sin joins — el incidente y su trace son una sola fila
+- Consistente con el patrón existente (`diagnosis`, `action`, `guardrail` también son JSONB)
+- Agregar `cost_usd_total` y `cost_per_incident` al summary endpoint se hace extrayendo el valor del JSONB en Python — sin SQL complejo
+- Si en el futuro se necesita análisis cross-incident de costos, se puede agregar una vista o migrar la columna
+
+**Key terms:** JSONB, Schema Design, Read Patterns, Normalization Trade-offs.
+
+---
+
+## 9. Eval suite targets heuristic mode, not LLM mode
 
 The eval cases in `evals/cases/cases.json` define expected actions based on the **heuristic pipeline** (offline mode). This is intentional.
 

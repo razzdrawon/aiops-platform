@@ -115,7 +115,7 @@ The pipeline runs fully offline (heuristic mode) when API keys are absent.
 |---|---|---|
 | 1 — Foundation | Clean architecture, PostgreSQL persistence, tests, CI | ✅ Complete |
 | 2 — Evaluation Framework | Synthetic cases, accuracy/precision/recall measurement | ✅ Complete |
-| 3 — Agent Observability | Token usage, cost per incident, latency per node | ⏳ Next |
+| 3 — Agent Observability | Token usage, cost per incident, latency per node | ✅ Complete |
 | 4 — Streaming + Integrations | SSE streaming, PagerDuty webhooks, Slack notifications | ⏳ Pending |
 
 ---

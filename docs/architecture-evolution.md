@@ -174,11 +174,64 @@ Any regression in heuristic accuracy fails the build.
 
 ---
 
+## Phase 3 — Agent Observability
+
+**Problem being solved:** after Phase 2 we could measure whether the agent made the right decision, but not _how_ it got there. In LLM systems the interesting questions are: which node is the bottleneck? how much does each incident cost in tokens? is the LLM consuming more tokens than expected?
+
+### What was added
+
+**Instrumentation in every node (`app/agent/graph.py`):**
+
+Each node now captures:
+- `started_at` — wall-clock timestamp (ISO 8601, UTC)
+- `duration_ms` — how long the node took, measured with `time.perf_counter()` for precision
+- `tokens` — input tokens, output tokens, and cost in USD (LLM nodes only; heuristic nodes return `null`)
+
+Token cost is computed using gpt-4o-mini pricing: $0.15/1M input, $0.60/1M output.
+
+**Token capture approach:**
+
+LangChain's `with_structured_output` is called with `include_raw=True`, which returns both the parsed Pydantic object and the raw `AIMessage`. The raw message has a `usage_metadata` attribute with token counts — no callbacks, no monkey-patching.
+
+**Trace rollup in the reporter node:**
+
+The reporter assembles all spans into a final `trace` object:
+
+```json
+{
+  "nodes": [
+    { "node": "detector",        "duration_ms": 1,    "tokens": null },
+    { "node": "diagnoser",       "duration_ms": 7779, "tokens": { "input": 917, "output": 158, "cost_usd": 0.00023235 } },
+    { "node": "action_selector", "duration_ms": 2816, "tokens": { "input": 513, "output": 139, "cost_usd": 0.00016035 } },
+    { "node": "guardrail",       "duration_ms": 0,    "tokens": null },
+    { "node": "executor",        "duration_ms": 0,    "tokens": null },
+    { "node": "reporter",        "duration_ms": 0,    "tokens": null }
+  ],
+  "total_tokens": { "input": 1430, "output": 297, "cost_usd": 0.0003927 },
+  "total_duration_ms": 10595
+}
+```
+
+**New DB column + endpoint:**
+
+- `trace` JSONB column added to `incidents` table via Alembic migration
+- `GET /incidents/{id}/trace` — returns the full trace for any stored incident
+
+### What the trace reveals
+
+From a real LLM-mode run on a latency spike:
+- 99% of the 10.5s total came from the two LLM nodes
+- `guardrail`, `executor`, `reporter` are effectively 0ms — pure Python
+- Each incident costs ~$0.0004 in tokens at gpt-4o-mini pricing
+
+In offline/heuristic mode all token fields are `null` and cost is `$0.00` — the trace still records timing for every node.
+
+---
+
 ## Phases Ahead
 
 | Phase | Focus | Key additions |
 |---|---|---|
-| **3 — Agent Observability** | LLM cost + latency tracking | Token usage per node, cost per incident, `GET /incidents/{id}/trace` |
 | **4 — Streaming + Integrations** | Real-time pipeline visibility | SSE streaming, PagerDuty/OpsGenie webhooks, Slack notifications |
 
 ---

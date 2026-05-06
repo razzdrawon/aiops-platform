@@ -184,6 +184,61 @@ Expected: lower accuracy (~4–10%) because the LLM makes different decisions th
 
 ---
 
+## Phase 3 — Agent Observability
+
+### Trigger an incident and inspect its trace
+
+```bash
+# Create a new incident
+curl -s -X POST http://localhost:8000/incident \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Latency spike on payment service", "signals": {"p95_ms": 2000, "service": "payments"}}' \
+  | python3 -m json.tool
+```
+
+Copy the `incident_id` from the response, then:
+
+```bash
+curl -s http://localhost:8000/incidents/<incident_id>/trace | python3 -m json.tool
+```
+
+Expected response includes:
+- `nodes` — one span per pipeline node with `started_at`, `duration_ms`, and `tokens`
+- `total_tokens` — aggregated input/output counts and total cost in USD
+- `total_duration_ms` — sum of all node durations
+
+### What to look for
+
+In **offline mode** (no API keys): all `tokens` fields are `null`, `cost_usd` is `0.0`. Timing still works.
+
+In **LLM mode** (with API keys): `diagnoser` and `action_selector` will show real token counts and cost. The two LLM nodes typically account for 99% of total duration.
+
+### Verificar métricas de costo en el summary
+
+```bash
+curl -s http://localhost:8000/metrics/summary | python3 -m json.tool
+```
+
+Expected: el response incluye `cost_usd_total` y `cost_usd_per_incident`. Si todos los incidentes fueron creados antes de Phase 3, ambos serán `0.0` y `null` respectivamente — crea un incidente nuevo primero.
+
+### Ver el dashboard con datos de costo
+
+Abre `dashboard/index.html` en un browser (con la API corriendo). Verás 5 KPI cards:
+- Incidents, Avg MTTR, Guardrail block rate — existentes
+- **Cost total (USD)** y **Cost per incident** — nuevos en Phase 3
+
+En modo offline (sin API keys) el costo será `$0.000000`. En LLM mode verás el costo real por incidente.
+
+### Run unit tests for trace logic
+
+```bash
+OPENAI_API_KEY="" PINECONE_API_KEY="" pytest tests/unit/test_trace.py -v
+```
+
+Expected: **14 passed** — covers token cost calculation, span structure, blocked vs allowed path, offline mode assertions.
+
+---
+
 ## Terminals summary
 
 | Terminal | What runs |

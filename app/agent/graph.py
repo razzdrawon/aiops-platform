@@ -6,7 +6,9 @@ Async nodes keep parity with aiokafka/FastAPI workloads under load.
 from __future__ import annotations
 
 import os
+import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any, Literal, TypedDict
 
 from dotenv import load_dotenv
@@ -21,6 +23,31 @@ from app.knowledge.indexer import search_runbooks
 
 load_dotenv()
 
+# gpt-4o-mini pricing (per token)
+_COST_PER_INPUT_TOKEN = 0.150 / 1_000_000
+_COST_PER_OUTPUT_TOKEN = 0.600 / 1_000_000
+
+
+def _token_span(usage_metadata: dict[str, int] | None) -> dict[str, Any] | None:
+    """Build a token summary dict from LangChain usage_metadata."""
+    if not usage_metadata:
+        return None
+    inp = usage_metadata.get("input_tokens", 0)
+    out = usage_metadata.get("output_tokens", 0)
+    cost = round(inp * _COST_PER_INPUT_TOKEN + out * _COST_PER_OUTPUT_TOKEN, 8)
+    return {"input": inp, "output": out, "cost_usd": cost}
+
+
+def _node_span(
+    node: str, perf_start: float, wall_start: float, tokens: dict | None = None
+) -> dict[str, Any]:
+    return {
+        "node": node,
+        "started_at": datetime.fromtimestamp(wall_start, tz=timezone.utc).isoformat(),
+        "duration_ms": int((time.perf_counter() - perf_start) * 1000),
+        "tokens": tokens,
+    }
+
 
 class IncidentState(TypedDict, total=False):
     incident_id: str
@@ -32,6 +59,7 @@ class IncidentState(TypedDict, total=False):
     guardrail_result: dict[str, Any]
     execution: dict[str, Any]
     report: str
+    trace: list[dict[str, Any]]
 
 
 class DiagnosisLLM(BaseModel):
@@ -83,24 +111,31 @@ def _heuristic_class(signals: dict[str, Any], title: str) -> str:
 
 
 async def detector_node(state: IncidentState) -> dict[str, Any]:
+    t0 = time.perf_counter()
+    wall0 = time.time()
     signals = state.get("signals") or {}
     title = state.get("title") or "incident"
     classification = _heuristic_class(signals, title)
+    span = _node_span("detector", t0, wall0)
     return {
         "detector": {
             "classification": classification,
             "severity_hint": "high" if float(signals.get("error_rate") or 0) > 0.1 else "medium",
-        }
+        },
+        "trace": (state.get("trace") or []) + [span],
     }
 
 
 async def diagnoser_node(state: IncidentState) -> dict[str, Any]:
+    t0 = time.perf_counter()
+    wall0 = time.time()
     title = state.get("title", "")
     signals = state.get("signals") or {}
     detector = state.get("detector") or {}
     docs, matched = await search_runbooks(f"{title} {signals} {detector.get('classification')}")
 
     if not os.getenv("OPENAI_API_KEY"):
+        span = _node_span("diagnoser", t0, wall0)
         return {
             "diagnosis": {
                 "narrative": "OpenAI disabled — heuristic diagnosis from signals and class only (no LLM).",
@@ -108,7 +143,8 @@ async def diagnoser_node(state: IncidentState) -> dict[str, Any]:
                 "matched_runbook_titles": [d.metadata.get("source", "") for d in docs[:3]],
                 # Offline mode skips vector confidence; let deterministic heuristics propose actions.
                 "no_runbook_match": False,
-            }
+            },
+            "trace": (state.get("trace") or []) + [span],
         }
 
     context = "\n\n".join(
@@ -116,7 +152,7 @@ async def diagnoser_node(state: IncidentState) -> dict[str, Any]:
     ) or "(no retrieval context — index may be empty)"
 
     llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0)
-    structured = llm.with_structured_output(DiagnosisLLM)
+    structured = llm.with_structured_output(DiagnosisLLM, include_raw=True)
     prompt = [
         SystemMessage(
             content=(
@@ -131,13 +167,21 @@ async def diagnoser_node(state: IncidentState) -> dict[str, Any]:
             )
         ),
     ]
-    parsed: DiagnosisLLM = await structured.ainvoke(prompt)
+    result = await structured.ainvoke(prompt)
+    parsed: DiagnosisLLM = result["parsed"]
+    usage = getattr(result.get("raw"), "usage_metadata", None)
     if not matched:
         parsed = parsed.model_copy(update={"no_runbook_match": True})
-    return {"diagnosis": parsed.model_dump()}
+    span = _node_span("diagnoser", t0, wall0, _token_span(usage))
+    return {
+        "diagnosis": parsed.model_dump(),
+        "trace": (state.get("trace") or []) + [span],
+    }
 
 
 async def action_selector_node(state: IncidentState) -> dict[str, Any]:
+    t0 = time.perf_counter()
+    wall0 = time.time()
     diagnosis = state.get("diagnosis") or {}
     detector = state.get("detector") or {}
     signals = state.get("signals") or {}
@@ -181,10 +225,11 @@ async def action_selector_node(state: IncidentState) -> dict[str, Any]:
                     "confidence": 0.5,
                     "rationale": "No strong heuristic action.",
                 }
-        return {"action": action}
+        span = _node_span("action_selector", t0, wall0)
+        return {"action": action, "trace": (state.get("trace") or []) + [span]}
 
     llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0)
-    structured = llm.with_structured_output(ActionLLM)
+    structured = llm.with_structured_output(ActionLLM, include_raw=True)
     prompt = [
         SystemMessage(
             content=(
@@ -202,13 +247,22 @@ async def action_selector_node(state: IncidentState) -> dict[str, Any]:
             )
         ),
     ]
-    parsed: ActionLLM = await structured.ainvoke(prompt)
-    return {"action": parsed.model_dump()}
+    result = await structured.ainvoke(prompt)
+    parsed: ActionLLM = result["parsed"]
+    usage = getattr(result.get("raw"), "usage_metadata", None)
+    span = _node_span("action_selector", t0, wall0, _token_span(usage))
+    return {"action": parsed.model_dump(), "trace": (state.get("trace") or []) + [span]}
 
 
 async def guardrail_node(state: IncidentState) -> dict[str, Any]:
+    t0 = time.perf_counter()
+    wall0 = time.time()
     action = state.get("action") or {}
-    return {"guardrail_result": validate_action(action)}
+    span = _node_span("guardrail", t0, wall0)
+    return {
+        "guardrail_result": validate_action(action),
+        "trace": (state.get("trace") or []) + [span],
+    }
 
 
 def route_after_guardrail(state: IncidentState) -> Literal["executor", "reporter"]:
@@ -219,6 +273,8 @@ def route_after_guardrail(state: IncidentState) -> Literal["executor", "reporter
 
 
 async def executor_node(state: IncidentState) -> dict[str, Any]:
+    t0 = time.perf_counter()
+    wall0 = time.time()
     action = state.get("action") or {}
     name = action.get("action", "noop")
     params = action.get("params") or {}
@@ -226,10 +282,16 @@ async def executor_node(state: IncidentState) -> dict[str, Any]:
         message = await dispatch(str(name), dict(params))
     except TypeError:
         message = await dispatch("noop", {"reason": f"bad params for {name}"})
-    return {"execution": {"tool": name, "message": message}}
+    span = _node_span("executor", t0, wall0)
+    return {
+        "execution": {"tool": name, "message": message},
+        "trace": (state.get("trace") or []) + [span],
+    }
 
 
 async def reporter_node(state: IncidentState) -> dict[str, Any]:
+    t0 = time.perf_counter()
+    wall0 = time.time()
     gr = state.get("guardrail_result") or {}
     ex = state.get("execution") or {}
     action = state.get("action") or {}
@@ -246,7 +308,25 @@ async def reporter_node(state: IncidentState) -> dict[str, Any]:
             f"Incident {state.get('incident_id')}: executed {ex.get('tool')} -> {ex.get('message')}. "
             f"Diagnosis: {diagnosis.get('narrative', '')}"
         )
-    return {"report": report}
+
+    span = _node_span("reporter", t0, wall0)
+    prior = state.get("trace") or []
+    all_spans = prior + [span]
+
+    # Roll up totals
+    total_input = sum((s["tokens"] or {}).get("input", 0) for s in all_spans)
+    total_output = sum((s["tokens"] or {}).get("output", 0) for s in all_spans)
+    total_cost = round(
+        total_input * _COST_PER_INPUT_TOKEN + total_output * _COST_PER_OUTPUT_TOKEN, 8
+    )
+    total_ms = sum(s["duration_ms"] for s in all_spans)
+
+    trace = {
+        "nodes": all_spans,
+        "total_tokens": {"input": total_input, "output": total_output, "cost_usd": total_cost},
+        "total_duration_ms": total_ms,
+    }
+    return {"report": report, "trace": trace}
 
 
 def build_graph():

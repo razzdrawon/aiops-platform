@@ -108,24 +108,54 @@ async def get_incident(
     }
 
 
+@app.get("/incidents/{incident_id}/trace")
+async def get_incident_trace(
+    incident_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    import uuid
+    repo = SQLAlchemyIncidentRepository(session)
+    record = await repo.get_by_id(uuid.UUID(incident_id))
+    if not record:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    if record.trace is None:
+        raise HTTPException(status_code=404, detail="No trace available for this incident")
+    return {
+        "incident_id": str(record.id),
+        "title": record.title,
+        "trace": record.trace,
+    }
+
+
 @app.get("/metrics/summary")
 async def metrics_summary(session: AsyncSession = Depends(get_session)):
     repo = SQLAlchemyIncidentRepository(session)
     records = await repo.get_all()
     if not records:
-        return {"count": 0, "mttr_ms_avg": None, "blocked_rate": None}
+        return {
+            "count": 0,
+            "mttr_seconds_avg": None,
+            "blocked_rate": None,
+            "cost_usd_total": 0.0,
+            "cost_usd_per_incident": None,
+        }
 
     blocked = sum(1 for r in records if r.status == "blocked")
-    resolved = [
-        r for r in records
-        if r.resolved_at and r.created_at
+    resolved = [r for r in records if r.resolved_at and r.created_at]
+    mttr_vals = [(r.resolved_at - r.created_at).total_seconds() for r in resolved]
+
+    # Extract cost from trace JSONB — incidents created before Phase 3 have trace=None
+    costs = [
+        (r.trace or {}).get("total_tokens", {}).get("cost_usd", 0.0)
+        for r in records
     ]
-    mttr_vals = [
-        (r.resolved_at - r.created_at).total_seconds()
-        for r in resolved
-    ]
+    cost_total = round(sum(costs), 8)
+    cost_per_incident = round(cost_total / len(records), 8) if cost_total > 0 else None
+
     return {
         "count": len(records),
         "mttr_seconds_avg": round(sum(mttr_vals) / len(mttr_vals), 1) if mttr_vals else None,
         "blocked_rate": round(blocked / len(records), 3),
+        "cost_usd_total": cost_total,
+        "cost_usd_per_incident": cost_per_incident,
     }

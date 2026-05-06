@@ -102,6 +102,33 @@ class TestGetIncident:
         assert response.status_code == 404
 
 
+class TestIncidentTrace:
+    async def test_trace_endpoint_returns_200(self, client):
+        create = await client.post(
+            "/incident",
+            json={"title": "Latency spike on search", "signals": {"p95_ms": 2000}},
+        )
+        incident_id = create.json()["incident_id"]
+        response = await client.get(f"/incidents/{incident_id}/trace")
+        assert response.status_code == 200
+
+    async def test_trace_has_nodes_and_totals(self, client):
+        create = await client.post(
+            "/incident",
+            json={"title": "Latency spike on search", "signals": {"p95_ms": 2000}},
+        )
+        incident_id = create.json()["incident_id"]
+        trace = (await client.get(f"/incidents/{incident_id}/trace")).json()["trace"]
+        assert "nodes" in trace
+        assert "total_tokens" in trace
+        assert "total_duration_ms" in trace
+        assert len(trace["nodes"]) > 0
+
+    async def test_trace_nonexistent_incident_returns_404(self, client):
+        response = await client.get("/incidents/00000000-0000-0000-0000-000000000000/trace")
+        assert response.status_code == 404
+
+
 class TestMetricsSummary:
     async def test_metrics_summary_returns_expected_shape(self, client):
         response = await client.get("/metrics/summary")

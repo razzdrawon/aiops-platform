@@ -47,6 +47,7 @@ class SQLAlchemyIncidentRepository(AbstractIncidentRepository):
             action=incident.get("action"),
             guardrail=incident.get("guardrail_result"),
             execution=incident.get("execution"),
+            trace=incident.get("trace"),
             report=incident.get("report", ""),
             resolved_at=datetime.now(timezone.utc),
         )

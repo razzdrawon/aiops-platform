@@ -151,6 +151,14 @@
           <h2>Guardrail block rate</h2>
           <p id="kpi-block">—</p>
         </div>
+        <div class="card">
+          <h2>Cost total (USD)</h2>
+          <p id="kpi-cost-total">—</p>
+        </div>
+        <div class="card">
+          <h2>Cost per incident</h2>
+          <p id="kpi-cost-per">—</p>
+        </div>
       </div>
       <table>
         <thead>
@@ -198,6 +206,14 @@
           summary.blocked_rate === null || summary.blocked_rate === undefined
             ? "—"
             : `${Math.round(summary.blocked_rate * 100)}%`;
+        document.getElementById("kpi-cost-total").textContent =
+          summary.cost_usd_total === null || summary.cost_usd_total === undefined
+            ? "—"
+            : `$${summary.cost_usd_total.toFixed(6)}`;
+        document.getElementById("kpi-cost-per").textContent =
+          summary.cost_usd_per_incident === null || summary.cost_usd_per_incident === undefined
+            ? "—"
+            : `$${summary.cost_usd_per_incident.toFixed(6)}`;
 
         const tbody = document.getElementById("rows");
         tbody.innerHTML = "";

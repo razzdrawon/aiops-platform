@@ -41,6 +41,8 @@ class IncidentModel(Base):
     action: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     guardrail: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     execution: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Observability trace — node timings, token usage, cost per incident (Phase 3)
+    trace: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

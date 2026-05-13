@@ -8,6 +8,10 @@ E-commerce platforms lose revenue every minute an incident stays open. This syst
 
 ---
 
+![Problem and solution diagram](docs/aiops_problem_solution_diagram.svg)
+
+---
+
 ## What it does
 
 | Stage | What happens |

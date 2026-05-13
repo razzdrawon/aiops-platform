@@ -1,0 +1,141 @@
+<svg width="100%" viewBox="0 0 680 1180" role="img" xmlns="http://www.w3.org/2000/svg" style="">
+<title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Blueprint of the AIOps autonomous incident resolution platform</title>
+<desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Layered architecture showing simulator, ingestion, agents, RAG context, and data sources.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<mask id="imagine-text-gaps-75k07o" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="680" height="1180" fill="white"/><rect x="231.5371551513672" y="24.25" width="216.92578125" height="21.5" fill="black" rx="2"/><rect x="294.8899841308594" y="130.25" width="90.22004699707031" height="21.5" fill="black" rx="2"/><rect x="234.2422332763672" y="147.9166717529297" width="211.515625" height="19" fill="black" rx="2"/><rect x="119.18035888671875" y="185.9166717529297" width="101.63932037353516" height="19.041337966918945" fill="black" rx="2"/><rect x="461.1529846191406" y="185.9166717529297" width="97.69400787353516" height="19" fill="black" rx="2"/><rect x="214" y="223.25001525878906" width="15.98828125" height="21.5" fill="black" rx="2"/><rect x="258.0182800292969" y="221.25001525878906" width="163.96353149414062" height="21.5" fill="black" rx="2"/><rect x="246.67062377929688" y="255.91665649414062" width="186.65884399414062" height="19.041351318359375" fill="black" rx="2"/><rect x="98.47852325439453" y="327.25" width="57.04296875" height="21.5" fill="black" rx="2"/><rect x="103.45899200439453" y="348.5" width="47.08203125" height="19" fill="black" rx="2"/><rect x="85.25586700439453" y="364.5" width="83.48828125" height="19.041351318359375" fill="black" rx="2"/><rect x="242.06576538085938" y="327.25" width="59.86848831176758" height="21.5" fill="black" rx="2"/><rect x="241.70118713378906" y="348.5" width="60.59765625" height="19.041351318359375" fill="black" rx="2"/><rect x="228.02606201171875" y="364.5" width="87.94791412353516" height="19" fill="black" rx="2"/><rect x="387.22528076171875" y="327.25" width="59.549476623535156" height="21.5" fill="black" rx="2"/><rect x="372.4140625" y="348.5" width="89.171875" height="19" fill="black" rx="2"/><rect x="374.0481872558594" y="364.5" width="85.90364074707031" height="19" fill="black" rx="2"/><rect x="531.8313598632812" y="327.25" width="60.33723831176758" height="21.5" fill="black" rx="2"/><rect x="531.6848754882812" y="348.5" width="60.63020706176758" height="19" fill="black" rx="2"/><rect x="516.7239379882812" y="364.5" width="90.55207824707031" height="19" fill="black" rx="2"/><rect x="97.18620300292969" y="413.25" width="59.627601623535156" height="21.500024795532227" fill="black" rx="2"/><rect x="99.72200775146484" y="434.5000305175781" width="54.55598831176758" height="19" fill="black" rx="2"/><rect x="91.85091400146484" y="450.5" width="70.29817581176758" height="19" fill="black" rx="2"/><rect x="242.15692138671875" y="413.25" width="59.686195373535156" height="21.500024795532227" fill="black" rx="2"/><rect x="243.86915588378906" y="434.5000305175781" width="56.26171875" height="19" fill="black" rx="2"/><rect x="228.57618713378906" y="450.5" width="86.84765625" height="19" fill="black" rx="2"/><rect x="387.39129638671875" y="413.25" width="59.217445373535156" height="21.500024795532227" fill="black" rx="2"/><rect x="379.5755310058594" y="434.5000305175781" width="74.84895324707031" height="19" fill="black" rx="2"/><rect x="372.1536560058594" y="450.5" width="89.69270324707031" height="19" fill="black" rx="2"/><rect x="532.2024536132812" y="413.25" width="59.59505081176758" height="21.500024795532227" fill="black" rx="2"/><rect x="538.4069213867188" y="434.5000305175781" width="47.186195373535156" height="19" fill="black" rx="2"/><rect x="523.439453125" y="450.5" width="77.12109375" height="19" fill="black" rx="2"/><rect x="248.00001525878906" y="513.25" width="16.69791603088379" height="21.5" fill="black" rx="2"/><rect x="269.9421081542969" y="511.25" width="190.11587524414062" height="21.5" fill="black" rx="2"/><rect x="91.57942199707031" y="558.5" width="56.84114456176758" height="19" fill="black" rx="2"/><rect x="80.73307037353516" y="574.5" width="78.53385162353516" height="19" fill="black" rx="2"/><rect x="531.5794067382812" y="558.5" width="56.84114456176758" height="19" fill="black" rx="2"/><rect x="517.89453125" y="574.5" width="84.2109375" height="19" fill="black" rx="2"/><rect x="200.2610626220703" y="637.25" width="79.47785949707031" height="21.5" fill="black" rx="2"/><rect x="384.330078125" y="637.25" width="111.33984375" height="21.5" fill="black" rx="2"/><rect x="328" y="703.25" width="15.91015625" height="21.5" fill="black" rx="2"/><rect x="385.96417236328125" y="701.25" width="98.07160949707031" height="21.5" fill="black" rx="2"/><rect x="72.181640625" y="750.5000610351562" width="95.63671875" height="19" fill="black" rx="2"/><rect x="506.59893798828125" y="750.5000610351562" width="106.80207824707031" height="19" fill="black" rx="2"/><rect x="172.7512969970703" y="807.25" width="114.49739074707031" height="21.5" fill="black" rx="2"/><rect x="404.57745361328125" y="807.25" width="90.84504699707031" height="21.5" fill="black" rx="2"/><rect x="328" y="873.25" width="16.22916603088379" height="21.5" fill="black" rx="2"/><rect x="397.54296875" y="871.25" width="74.9140625" height="21.5" fill="black" rx="2"/><rect x="62.780609130859375" y="931.25" width="74.43879699707031" height="21.5" fill="black" rx="2"/><rect x="44.98113250732422" y="950.5" width="110.03775787353516" height="19" fill="black" rx="2"/><rect x="183.58462524414062" y="931.25" width="112.83072662353516" height="21.5" fill="black" rx="2"/><rect x="190.99673461914062" y="950.5" width="98.00650787353516" height="19" fill="black" rx="2"/><rect x="544.2063598632812" y="931.25" width="71.58723831176758" height="21.5" fill="black" rx="2"/><rect x="527.8782348632812" y="950.5" width="104.24348449707031" height="19" fill="black" rx="2"/><rect x="56" y="995.9166259765625" width="122.27082824707031" height="19" fill="black" rx="2"/><rect x="196.00001525878906" y="995.9166259765625" width="127.3228988647461" height="19.04129981994629" fill="black" rx="2"/><rect x="536" y="995.9166259765625" width="110.66926574707031" height="19" fill="black" rx="2"/><rect x="328" y="1043.25" width="13.41015625" height="21.5" fill="black" rx="2"/><rect x="386.05206298828125" y="1041.25" width="157.8958282470703" height="21.5" fill="black" rx="2"/><rect x="56" y="1125.5" width="94.33463287353516" height="19" fill="black" rx="2"/><rect x="464.2486877441406" y="1125.5" width="159.7512969970703" height="19" fill="black" rx="2"/></mask></defs>
+
+<rect width="680" height="1180" fill="#1a1a1a"/>
+
+<text x="340" y="40" text-anchor="middle" font-size="22" font-weight="500" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:auto">Blueprint of the AIOps platform</text>
+<line x1="180" y1="56" x2="500" y2="56" stroke="#185FA5" stroke-width="2"/>
+
+<circle cx="340" cy="100" r="22" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="340" y="146" text-anchor="middle" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:auto">SRE / on-call</text>
+<text x="340" y="162" text-anchor="middle" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Operator and consumer of incidents</text>
+
+<text x="170" y="200" text-anchor="middle" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Triggers incident</text>
+<path d="M260 110 Q200 150 200 200" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)" mask="url(#imagine-text-gaps-75k07o)"/>
+<text x="510" y="200" text-anchor="middle" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Receives report</text>
+<path d="M420 110 Q480 150 480 200" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)" mask="url(#imagine-text-gaps-75k07o)"/>
+
+<circle cx="190" cy="230" r="12" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="218" y="234" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:start;dominant-baseline:central">5</text>
+<rect x="240" y="216" width="200" height="32" rx="6" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="340" y="232" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Control plane (FastAPI)</text>
+<text x="340" y="270" text-anchor="middle" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">Autonomous LangGraph agents</text>
+
+<rect x="40" y="290" width="600" height="200" rx="16" fill="#712B13" stroke="#F0997B" stroke-width="0.5"/>
+
+<rect x="60" y="310" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="127" y="338" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 1</text>
+<text x="127" y="358" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Detect</text>
+<text x="127" y="374" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Triage signals</text>
+
+<rect x="205" y="310" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="272" y="338" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 2</text>
+<text x="272" y="358" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Diagnose</text>
+<text x="272" y="374" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">LLM plus RAG</text>
+
+<rect x="350" y="310" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="417" y="338" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 3</text>
+<text x="417" y="358" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Choose action</text>
+<text x="417" y="374" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Pick playbook</text>
+
+<rect x="495" y="310" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="562" y="338" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 4</text>
+<text x="562" y="358" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Guardrail</text>
+<text x="562" y="374" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Block if unsafe</text>
+
+<rect x="60" y="396" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="127" y="424" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 5</text>
+<text x="127" y="444" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Execute</text>
+<text x="127" y="460" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Mock tools</text>
+
+<rect x="205" y="396" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="272" y="424" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 6</text>
+<text x="272" y="444" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Rollback</text>
+<text x="272" y="460" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Revert deploy</text>
+
+<rect x="350" y="396" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="417" y="424" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 7</text>
+<text x="417" y="444" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Open fix PR</text>
+<text x="417" y="460" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Patch and ship</text>
+
+<rect x="495" y="396" width="135" height="76" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="562" y="424" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Agent 8</text>
+<text x="562" y="444" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Report</text>
+<text x="562" y="460" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Postmortem</text>
+
+<path d="M127 490 Q127 520 220 520" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<path d="M562 490 Q562 520 460 520" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<circle cx="225" cy="520" r="12" fill="#712B13" stroke="#F0997B" stroke-width="0.5"/>
+<text x="252" y="524" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:start;dominant-baseline:central">4</text>
+<rect x="275" y="506" width="180" height="32" rx="6" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="365" y="522" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Orchestration (LangGraph)</text>
+
+<text x="120" y="568" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Decision</text>
+<text x="120" y="584" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Context tool</text>
+<text x="560" y="568" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Decision</text>
+<text x="560" y="584" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Data retrieval</text>
+
+<path d="M225 540 Q120 540 200 600" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<path d="M455 540 Q560 540 480 600" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+
+<rect x="40" y="610" width="600" height="76" rx="12" fill="#085041" stroke="#5DCAA5" stroke-width="0.5"/>
+<rect x="160" y="630" width="160" height="36" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="240" y="648" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">LangChain</text>
+<rect x="360" y="630" width="160" height="36" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="440" y="648" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">OpenTelemetry</text>
+
+<circle cx="305" cy="710" r="12" fill="#085041" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="332" y="714" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:start;dominant-baseline:central">3</text>
+<rect x="355" y="696" width="160" height="32" rx="6" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="435" y="712" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Context layer</text>
+
+<text x="120" y="760" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Vector retrieval</text>
+<text x="560" y="760" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Stream telemetry</text>
+
+<path d="M240 670 Q120 720 200 770" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<path d="M440 670 Q560 720 480 770" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+
+<rect x="40" y="780" width="600" height="76" rx="12" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<rect x="140" y="800" width="180" height="36" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="230" y="818" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Pinecone (RAG)</text>
+<rect x="360" y="800" width="180" height="36" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="450" y="818" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Kafka topics</text>
+
+<circle cx="305" cy="880" r="12" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="332" y="884" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:start;dominant-baseline:central">2</text>
+<rect x="355" y="866" width="160" height="32" rx="6" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="435" y="882" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Data layer</text>
+
+<rect x="40" y="920" width="120" height="56" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="100" y="942" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Runbooks</text>
+<text x="100" y="960" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Markdown corpus</text>
+
+<rect x="180" y="920" width="120" height="56" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="240" y="942" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Incident history</text>
+<text x="240" y="960" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Past resolutions</text>
+
+<rect x="520" y="920" width="120" height="56" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="580" y="942" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Simulator</text>
+<text x="580" y="960" text-anchor="middle" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:central">Checkout events</text>
+
+<path d="M100 920 Q100 880 200 850" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<path d="M240 920 Q240 880 240 850" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+<path d="M580 920 Q580 880 480 850" fill="none" stroke="#888780" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+
+<text x="60" y="1010" text-anchor="start" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Indexed to Pinecone</text>
+<text x="200" y="1010" text-anchor="start" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Replayed for learning</text>
+<text x="540" y="1010" text-anchor="start" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:auto">Produces to Kafka</text>
+
+<circle cx="305" cy="1050" r="12" fill="#712B13" stroke="#F0997B" stroke-width="0.5"/>
+<text x="332" y="1054" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:start;dominant-baseline:central">1</text>
+<rect x="355" y="1036" width="220" height="32" rx="6" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="465" y="1052" text-anchor="middle" dominant-baseline="central" style="fill:rgb(250, 249, 245);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">LLMs and embeddings</text>
+
+<line x1="60" y1="1110" x2="620" y2="1110" stroke="#888780" stroke-width="0.5"/>
+<text x="60" y="1135" text-anchor="start" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:start;dominant-baseline:central">AIOps platform</text>
+<text x="620" y="1135" text-anchor="end" dominant-baseline="central" style="fill:rgb(194, 192, 182);stroke:none;font-family:-apple-system, system-ui, sans-serif;font-size:12px;font-weight:400;text-anchor:end;dominant-baseline:central">razzdrawon/aiops-platform</text>
+</svg>

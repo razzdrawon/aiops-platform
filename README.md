@@ -84,17 +84,43 @@ For LLM mode, add `OPENAI_API_KEY` and `PINECONE_API_KEY` to `.env` and run `pyt
 ## Architecture
 
 ```
-API (FastAPI)
-  ↓
-LangGraph Pipeline
-  detector → diagnoser → action_selector → guardrail → executor → reporter
-  ↓
-Domain Layer (pure Python — no LLM, no DB)
-  ↓
-Repository (abstract interface)
-  ↓
-Infrastructure (SQLAlchemy + PostgreSQL)
+ SRE / on-call
+   ↕  triggers incident · receives report
+   
+ ┌─────────────────────────────────────────────┐
+ │  Control plane  ·  FastAPI                  │
+ └─────────────────────────────────────────────┘
+                        ↕
+ ┌─────────────────────────────────────────────────────────────────┐
+ │  Agent pipeline  ·  LangGraph                                   │
+ │                                                                 │
+ │  detect → diagnose → choose_action → guardrail → execute        │
+ │                                          ↓                      │
+ │                               rollback | fix_pr | scale         │
+ │                                          ↓                      │
+ │                                       report                    │
+ └─────────────────────────────────────────────────────────────────┘
+                        ↕
+ ┌─────────────────────────────────────────┐
+ │  Context layer                          │
+ │  LangChain  ·  OpenTelemetry            │
+ └─────────────────────────────────────────┘
+                        ↕
+ ┌─────────────────────────────────────────┐
+ │  Data layer                             │
+ │  Pinecone (RAG)  ·  Kafka topics        │
+ └─────────────────────────────────────────┘
+         ↑                    ↑
+  Runbooks (Markdown)    Simulator → Kafka
+  Incident history
+                        ↕
+ ┌─────────────────────────────────────────┐
+ │  Foundation                             │
+ │  OpenAI LLMs  ·  Embeddings             │
+ └─────────────────────────────────────────┘
 ```
+
+![Architecture blueprint](docs/aiops_blueprint_diagram.svg)
 
 The guardrail node is deterministic Python — the LLM cannot override it.  
 The pipeline runs fully offline (heuristic mode) when API keys are absent.

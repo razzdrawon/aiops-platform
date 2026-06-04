@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIOps — Cómo funciona (versión negocio)</title>
+<style>
+  :root{
+    --bg:#0c1020; --panel:#151c30; --panel2:#1d2740; --border:#2a3550;
+    --text:#eef2fa; --muted:#94a2c0; --blue:#5aa2ff; --green:#3ddc84;
+    --amber:#ffc24b; --red:#ff6470; --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 75% -15%,#1a2543 0%,var(--bg) 60%);
+    color:var(--text);font-family:var(--sans);min-height:100vh;padding:34px 22px 90px}
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:26px}
+  .controls{display:flex;gap:10px;align-items:center;margin-bottom:30px}
+  button{background:var(--blue);color:#021;border:0;font-weight:800;font-size:15px;
+    padding:12px 22px;border-radius:10px;cursor:pointer;font-family:var(--sans)}
+  button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+  button:disabled{opacity:.4;cursor:default}
+  .clock{margin-left:auto;font-size:14px;color:var(--amber);font-weight:700}
+
+  .stage{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+    padding:22px 24px;margin-bottom:16px;opacity:0;transform:translateY(14px);
+    transition:opacity .5s ease, transform .5s ease, border-color .4s}
+  .stage.show{opacity:1;transform:none}
+  .stage.active{border-color:var(--blue);box-shadow:0 14px 40px -18px var(--blue)}
+  .stage .head{display:flex;align-items:center;gap:14px}
+  .emoji{font-size:30px;line-height:1}
+  .stage h3{margin:0;font-size:17px}
+  .stage .who{font-size:12px;color:var(--muted);margin-top:2px}
+  .stage p{margin:14px 0 0;font-size:15px;line-height:1.6;color:#dce4f3}
+  .stage .quote{margin-top:14px;padding:12px 16px;background:var(--panel2);
+    border-left:3px solid var(--blue);border-radius:8px;font-size:14px;font-style:italic;color:#cfe0ff}
+  .badge{margin-left:auto;font-size:12px;font-weight:700;padding:5px 12px;border-radius:99px}
+  .badge.green{background:rgba(61,220,132,.16);color:var(--green)}
+  .badge.amber{background:rgba(255,194,75,.16);color:var(--amber)}
+  .badge.red{background:rgba(255,100,112,.16);color:var(--red)}
+  .badge.blue{background:rgba(90,162,255,.16);color:var(--blue)}
+
+  .scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px;
+    opacity:0;transform:translateY(14px);transition:.5s}
+  .scoreboard.show{opacity:1;transform:none}
+  .score{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center}
+  .score .v{font-size:30px;font-weight:900}
+  .score .l{font-size:12px;color:var(--muted);margin-top:4px}
+  .green-t{color:var(--green)} .amber-t{color:var(--amber)} .blue-t{color:var(--blue)}
+  .scenario-pick{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+  .chip{padding:8px 14px;border-radius:99px;border:1px solid var(--border);background:var(--panel);
+    color:var(--muted);font-size:13px;cursor:pointer;font-weight:600}
+  .chip.on{border-color:var(--blue);color:var(--text);background:var(--panel2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛒 AIOps en acción</h1>
+  <div class="sub">Cómo el agente resuelve un incidente solo — contado como una historia, sin tecnicismos.</div>
+
+  <div class="scenario-pick" id="picker">
+    <div class="chip on" data-s="0">😱 Incidente típico (se resuelve solo)</div>
+    <div class="chip" data-s="1">🛡️ Incidente peligroso (pide ayuda humana)</div>
+  </div>
+
+  <div class="controls">
+    <button id="run">▶ Reproducir la historia</button>
+    <button id="reset" class="ghost">Reiniciar</button>
+    <span class="clock" id="clock"></span>
+  </div>
+
+  <div id="stages"></div>
+
+  <div class="scoreboard" id="board">
+    <div class="score"><div class="v green-t" id="s-time">—</div><div class="l">Tiempo de resolución</div></div>
+    <div class="score"><div class="v amber-t" id="s-money">—</div><div class="l">Pérdida evitada</div></div>
+    <div class="score"><div class="v blue-t" id="s-human">—</div><div class="l">Intervención humana</div></div>
+  </div>
+</div>
+
+<script>
+const SCENARIOS = [
+  { // típico, se resuelve solo
+    clock0: "🕑 14:03 — un martes cualquiera",
+    score: { time:"41 seg", money:"$3,200", human:"Ninguna" },
+    steps:[
+      { e:"🛒", t:"Llega el problema", who:"Tienda online", badge:["amber","Empezando"],
+        p:"De repente, 1 de cada 8 clientes que intenta pagar en el checkout recibe un error. Las ventas empiezan a caerse.",
+        q:"\"Algo está fallando en el pago… y cada minuto cuesta dinero.\"" },
+      { e:"🔎", t:"El agente lo detecta al instante", who:"Detector",badge:["blue","Detectado"],
+        p:"Sin esperar a que un cliente se queje, el agente ve el pico de errores y lo clasifica: «alta tasa de errores en checkout, severidad alta»." },
+      { e:"🧠", t:"Busca en el manual de la empresa", who:"Diagnóstico + RAG",badge:["blue","Diagnosticado"],
+        p:"Consulta los runbooks internos (la documentación de «qué hacer cuando pasa X»). Encuentra el caso exacto y deduce la causa más probable: un despliegue reciente salió mal.",
+        q:"\"Esto ya nos pasó antes. El manual dice que suele ser un deploy defectuoso.\"" },
+      { e:"⚙️", t:"Propone una solución segura", who:"Selector de acción",badge:["blue","Plan listo"],
+        p:"En vez de tocar producción a lo bruto, decide abrir una corrección (un Pull Request) para arreglar el deploy. Confianza: 80%." },
+      { e:"🛡️", t:"Pasa el control de seguridad", who:"Guardrail",badge:["green","Aprobado"],
+        p:"Antes de actuar, una regla fija revisa: ¿es una acción peligrosa? No, solo abre una corrección. Se aprueba automáticamente.",
+        q:"\"La acción es segura, adelante sin pedir permiso.\"" },
+      { e:"🚀", t:"Ejecuta y cierra el incidente", who:"Ejecutor + Reporte",badge:["green","Resuelto"],
+        p:"Aplica la corrección, abre el PR de arreglo y deja constancia de todo lo que hizo. El checkout vuelve a la normalidad." },
+    ]
+  },
+  { // peligroso, escala a humano
+    clock0: "🕛 23:47 — fin de semana, sin nadie de guardia",
+    score: { time:"12 seg", money:"Riesgo contenido", human:"Sí — escalado" },
+    steps:[
+      { e:"💥", t:"Llega un problema grave", who:"Base de datos",badge:["red","Crítico"],
+        p:"La base de datos da señales raras y confusas. El agente no está seguro de qué la causa exactamente.",
+        q:"\"Esto es serio, pero los síntomas no son claros…\"" },
+      { e:"🔎", t:"El agente lo detecta", who:"Detector",badge:["blue","Detectado"],
+        p:"Identifica que hay sobrecarga en la base de datos, severidad crítica." },
+      { e:"🧠", t:"Busca en el manual… pero no hay match claro", who:"Diagnóstico + RAG",badge:["amber","Dudoso"],
+        p:"Revisa los runbooks pero ninguno encaja con confianza. La situación es ambigua. Confianza baja: 70%.",
+        q:"\"No tengo un manual que aplique con seguridad a este caso.\"" },
+      { e:"⚙️", t:"Considera una acción drástica", who:"Selector de acción",badge:["red","Peligrosa"],
+        p:"La opción más rápida sería reiniciar la base de datos — pero eso es una acción destructiva que podría empeorar todo si se equivoca." },
+      { e:"🛡️", t:"El control de seguridad lo BLOQUEA", who:"Guardrail",badge:["red","Bloqueado"],
+        p:"Regla de oro: una acción destructiva solo se permite con más de 85% de confianza. Aquí hay 70%. El agente NO puede ejecutarla por su cuenta.",
+        q:"\"Acción peligrosa + poca certeza = no la hago sola. Llamo a un humano.\"" },
+      { e:"📲", t:"Escala a la persona de guardia", who:"Reporte",badge:["green","A salvo"],
+        p:"En vez de arriesgarse, avisa al ingeniero con todo el contexto ya preparado: qué pasa, qué sospecha y qué opciones hay. El humano decide.",
+        q:"\"Lo importante: el agente nunca rompe nada cuando no está seguro.\"" },
+    ]
+  }
+];
+
+let current = 0, running = false;
+const stagesEl = document.getElementById('stages');
+const board = document.getElementById('board');
+const clock = document.getElementById('clock');
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+function render(){
+  stagesEl.innerHTML='';
+  SCENARIOS[current].steps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='stage'; d.id='stg-'+i;
+    d.innerHTML=`<div class="head">
+        <span class="emoji">${s.e}</span>
+        <div><h3>${s.t}</h3><div class="who">${s.who}</div></div>
+        <span class="badge ${s.badge[0]}">${s.badge[1]}</span>
+      </div>
+      <p>${s.p}</p>
+      ${s.q?`<div class="quote">${s.q}</div>`:''}`;
+    stagesEl.appendChild(d);
+  });
+  board.classList.remove('show');
+  clock.textContent='';
+}
+
+async function run(){
+  if(running) return; running=true;
+  document.getElementById('run').disabled=true;
+  render();
+  clock.textContent = SCENARIOS[current].clock0;
+  await sleep(600);
+  const steps = SCENARIOS[current].steps;
+  for(let i=0;i<steps.length;i++){
+    const el=document.getElementById('stg-'+i);
+    el.classList.add('show','active');
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    await sleep(1700);
+    el.classList.remove('active');
+  }
+  const sc=SCENARIOS[current].score;
+  document.getElementById('s-time').textContent=sc.time;
+  document.getElementById('s-money').textContent=sc.money;
+  document.getElementById('s-human').textContent=sc.human;
+  board.classList.add('show');
+  board.scrollIntoView({behavior:'smooth',block:'center'});
+  running=false; document.getElementById('run').disabled=false;
+}
+
+document.getElementById('picker').addEventListener('click',e=>{
+  const chip=e.target.closest('.chip'); if(!chip||running) return;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  chip.classList.add('on'); current=+chip.dataset.s; render();
+});
+document.getElementById('run').addEventListener('click',run);
+document.getElementById('reset').addEventListener('click',render);
+render();
+</script>
+</body>
+</html>

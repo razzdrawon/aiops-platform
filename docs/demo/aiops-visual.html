@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIOps — Visual Demo</title>
+<style>
+  :root{
+    --bg:#070b16; --panel:#0f1626; --border:#1f2b44; --text:#eaf0fb; --muted:#7e8db0;
+    --blue:#5aa2ff; --green:#37e08a; --amber:#ffc24b; --red:#ff5d6c;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(900px 600px at 50% -10%,#13203c 0%,var(--bg) 60%);
+    color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;padding:24px 16px 60px;overflow-x:hidden}
+  h1{font-size:20px;font-weight:800;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:13px;margin:4px 0 18px}
+  .controls{display:flex;gap:10px;margin-bottom:14px}
+  button{background:var(--blue);color:#021;border:0;font-weight:800;font-size:14px;
+    padding:11px 22px;border-radius:10px;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  button:disabled{opacity:.4;cursor:default}
+
+  .stage-wrap{width:100%;max-width:920px}
+  svg{width:100%;height:auto;display:block}
+
+  .label{font:600 13px var(--sans);fill:var(--muted)}
+  .node-name{font:700 13px var(--sans);fill:var(--text)}
+  .node-sub{font:500 10px var(--sans);fill:var(--muted)}
+  .caption{font:700 15px var(--sans);fill:var(--text)}
+
+  .node-box{fill:var(--panel);stroke:var(--border);stroke-width:1.5;transition:all .4s}
+  .node-box.active{stroke:var(--blue);filter:drop-shadow(0 0 10px rgba(90,162,255,.7))}
+  .node-box.done{stroke:var(--green)}
+  .node-box.blocked{stroke:var(--red);filter:drop-shadow(0 0 12px rgba(255,93,108,.7))}
+  .wire{stroke:var(--border);stroke-width:2.5;fill:none;transition:stroke .4s}
+  .wire.lit{stroke:var(--green)}
+
+  .store{transition:all .5s}
+  .pulse-ring{fill:none;stroke:var(--red);stroke-width:2;opacity:0}
+
+  .bigcaption{height:42px;display:flex;align-items:center;justify-content:center;
+    font-size:17px;font-weight:700;margin-top:8px;text-align:center;transition:.3s}
+
+  /* detail panel — opens the black box */
+  .detail{width:100%;max-width:760px;margin-top:6px;background:var(--panel);
+    border:1px solid var(--border);border-radius:14px;padding:0 20px;
+    max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .35s,padding .35s,border-color .4s}
+  .detail.show{max-height:260px;opacity:1;padding:18px 20px}
+  .detail.accent-blue{border-color:var(--blue)} .detail.accent-green{border-color:var(--green)}
+  .detail.accent-red{border-color:var(--red)} .detail.accent-amber{border-color:var(--amber)}
+  .detail .dh{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800;margin-bottom:4px}
+  .detail .dh .what{color:var(--muted);font-weight:600;font-size:12px}
+  .detail .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:12px}
+  @media(max-width:620px){.detail .grid{grid-template-columns:1fr}}
+  .detail .item .t{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+  .detail .item .d{font-size:13.5px;margin-top:3px;line-height:1.45}
+  .detail .data{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#0a1120;
+    border:1px solid var(--border);border-radius:7px;padding:7px 10px;margin-top:12px;color:#bcd0f5}
+  .detail .data b{color:var(--green)} .detail .data .bad{color:var(--red)} .detail .data .warn{color:var(--amber)}
+  .scoreboard{display:flex;gap:26px;margin-top:14px;opacity:0;transition:.6s}
+  .scoreboard.show{opacity:1}
+  .score{text-align:center}
+  .score .v{font-size:26px;font-weight:900}
+  .score .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .green-t{color:var(--green)} .amber-t{color:var(--amber)} .blue-t{color:var(--blue)} .red-t{color:var(--red)}
+  .mode{display:flex;gap:8px;margin-bottom:14px}
+  .chip{padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:var(--panel);
+    color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+  .chip.on{border-color:var(--blue);color:var(--text)}
+</style>
+</head>
+<body>
+  <h1>⚡ AIOps — Autonomous Incident Resolution</h1>
+  <div class="sub">Watch one incident flow through the agent. Minimal words, just the motion.</div>
+
+  <div class="mode" id="mode">
+    <div class="chip on" data-s="0">✅ Auto-resolved</div>
+    <div class="chip" data-s="1">🛡️ Blocked → escalated</div>
+  </div>
+  <div class="controls">
+    <button id="run">▶ Play</button>
+    <button id="reset" class="ghost">Reset</button>
+  </div>
+
+  <div class="stage-wrap">
+    <svg viewBox="0 0 920 360" id="svg">
+      <!-- wires (drawn first, behind) -->
+      <path class="wire" id="w0" d="M150,180 H250"/>
+      <path class="wire" id="w1" d="M370,180 H470"/>
+      <path class="wire" id="w2" d="M590,180 H690"/>
+      <path class="wire" id="w3" d="M810,180 V250 H560"/>  <!-- guardrail down -->
+      <path class="wire" id="wback" d="M560,250 H150 V215"/> <!-- back to store -->
+
+      <!-- STORE (left) -->
+      <g class="store" id="store">
+        <rect x="40" y="135" width="90" height="90" rx="14" class="node-box" id="store-box"/>
+        <text x="85" y="180" text-anchor="middle" font-size="34" id="store-emoji">🛒</text>
+        <text x="85" y="248" text-anchor="middle" class="node-sub" id="store-state">healthy</text>
+      </g>
+
+      <!-- PIPELINE NODES -->
+      <!-- detector -->
+      <g>
+        <rect x="250" y="145" width="120" height="70" rx="12" class="node-box" id="n0"/>
+        <text x="310" y="178" text-anchor="middle" font-size="22">🔎</text>
+        <text x="310" y="200" text-anchor="middle" class="node-sub">Detect</text>
+      </g>
+      <!-- diagnose -->
+      <g>
+        <rect x="470" y="145" width="120" height="70" rx="12" class="node-box" id="n1"/>
+        <text x="530" y="178" text-anchor="middle" font-size="22">🧠</text>
+        <text x="530" y="200" text-anchor="middle" class="node-sub">Diagnose · RAG</text>
+      </g>
+      <!-- guardrail -->
+      <g>
+        <rect x="690" y="145" width="120" height="70" rx="12" class="node-box" id="n2"/>
+        <text x="750" y="178" text-anchor="middle" font-size="22">🛡️</text>
+        <text x="750" y="200" text-anchor="middle" class="node-sub">Guardrail</text>
+      </g>
+      <!-- action result (bottom center) -->
+      <g>
+        <rect x="440" y="280" width="120" height="60" rx="12" class="node-box" id="n3"/>
+        <text x="500" y="308" text-anchor="middle" font-size="20" id="act-emoji">🚀</text>
+        <text x="500" y="328" text-anchor="middle" class="node-sub" id="act-label">Execute</text>
+      </g>
+
+      <!-- moving signal dot -->
+      <circle id="dot" r="7" fill="var(--amber)" opacity="0"/>
+      <!-- pulse ring on store -->
+      <circle class="pulse-ring" id="ring" cx="85" cy="180" r="46"/>
+    </svg>
+  </div>
+
+  <div class="bigcaption" id="caption">Press Play ▶</div>
+
+  <div class="detail" id="detail">
+    <div class="dh"><span id="d-emoji">🔎</span><span id="d-title">Node</span><span class="what" id="d-what"></span></div>
+    <div class="grid">
+      <div class="item"><div class="t">What it does</div><div class="d" id="d-does"></div></div>
+      <div class="item"><div class="t">How it works</div><div class="d" id="d-how"></div></div>
+    </div>
+    <div class="data" id="d-data"></div>
+  </div>
+
+  <div class="scoreboard" id="board">
+    <div class="score"><div class="v green-t" id="s1">—</div><div class="l">Time to resolve</div></div>
+    <div class="score"><div class="v amber-t" id="s2">—</div><div class="l">Revenue saved</div></div>
+    <div class="score"><div class="v blue-t" id="s3">—</div><div class="l">Human effort</div></div>
+  </div>
+
+<script>
+const svg = document.getElementById('svg');
+const dot = document.getElementById('dot');
+const cap = document.getElementById('caption');
+const ring = document.getElementById('ring');
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+let running=false, current=0;
+
+// animate dot along a straight A->B over t ms
+async function move(x1,y1,x2,y2,t){
+  dot.setAttribute('opacity','1');
+  const steps=Math.max(12,t/16);
+  for(let i=0;i<=steps;i++){
+    const k=i/steps;
+    dot.setAttribute('cx', x1+(x2-x1)*k);
+    dot.setAttribute('cy', y1+(y2-y1)*k);
+    await sleep(t/steps);
+  }
+}
+function setCap(txt,color){ cap.textContent=txt; cap.style.color=color||'var(--text)'; }
+
+const dp = document.getElementById('detail');
+function detail(o){ // {emoji,title,what,does,how,data,accent}
+  document.getElementById('d-emoji').textContent=o.emoji;
+  document.getElementById('d-title').textContent=o.title;
+  document.getElementById('d-what').textContent=o.what||'';
+  document.getElementById('d-does').textContent=o.does;
+  document.getElementById('d-how').textContent=o.how;
+  document.getElementById('d-data').innerHTML=o.data||'';
+  dp.className='detail show'+(o.accent?(' accent-'+o.accent):'');
+}
+function hideDetail(){ dp.className='detail'; }
+function cls(id,c){ document.getElementById(id).setAttribute('class','node-box '+c); }
+function wireLit(id){ document.getElementById(id).classList.add('lit'); }
+
+async function pulseStore(){
+  for(let p=0;p<3;p++){
+    ring.style.transition='none'; ring.setAttribute('r',30); ring.style.opacity='.9';
+    await sleep(20);
+    ring.style.transition='all .8s ease-out'; ring.setAttribute('r',70); ring.style.opacity='0';
+    await sleep(420);
+  }
+}
+
+function resetAll(){
+  ['n0','n1','n2','n3'].forEach(id=>document.getElementById(id).setAttribute('class','node-box'));
+  ['w0','w1','w2','w3','wback'].forEach(id=>document.getElementById(id).classList.remove('lit'));
+  document.getElementById('store-emoji').textContent='🛒';
+  document.getElementById('store-state').textContent='healthy';
+  document.getElementById('store-box').setAttribute('class','node-box');
+  document.getElementById('act-emoji').textContent='🚀';
+  document.getElementById('act-label').textContent='Execute';
+  dot.setAttribute('opacity','0'); ring.style.opacity='0';
+  document.getElementById('board').classList.remove('show');
+  hideDetail();
+  setCap('Press Play ▶','var(--muted)');
+}
+
+async function runAuto(){
+  // 1. incident hits store
+  document.getElementById('store-emoji').textContent='🔥';
+  document.getElementById('store-state').textContent='ERRORS ↑';
+  document.getElementById('store-box').setAttribute('class','node-box blocked');
+  setCap('🔥 12% of checkouts are failing…','var(--red)');
+  detail({emoji:'🛒',title:'Incoming signals',what:'· from the live store',accent:'red',
+    does:'Logs, metrics and traces stream in continuously from the checkout service.',
+    how:'Events are grouped by trace_id so one failed request = one correlated bundle, not noise.',
+    data:'trace_id <b>a3f9-checkout</b> · error_rate <span class="bad">0.12</span> · p99 <span class="warn">1840ms</span>'});
+  await pulseStore(); await sleep(1600);
+
+  // 2. detect
+  setCap('🔎 Agent detects the spike instantly','var(--blue)');
+  await move(130,180,250,180,500); wireLit('w0'); cls('n0','active');
+  detail({emoji:'🔎',title:'Detector',what:'· rule-based, no LLM',accent:'blue',
+    does:'Classifies the incident type and severity from the raw signals.',
+    how:'Fast deterministic heuristics on thresholds (error rate, latency) — runs even offline.',
+    data:'classification = <b>high_error_rate</b> · severity = <span class="warn">high</span>'});
+  await sleep(1900); cls('n0','done');
+
+  // 3. diagnose
+  setCap('🧠 Finds the matching runbook → "bad deploy"','var(--blue)');
+  await move(370,180,470,180,500); wireLit('w1'); cls('n1','active');
+  detail({emoji:'🧠',title:'Diagnose + RAG',what:'· LLM + knowledge base',accent:'blue',
+    does:'Figures out the most likely root cause and how confident it is.',
+    how:'Searches a Pinecone index of internal runbooks (semantic search), feeds the best match to the LLM as context.',
+    data:'runbook = <b>high-error-rate.md</b> (match 0.31 ✓) · cause = "bad deploy" · confidence <b>0.80</b>'});
+  await sleep(2200); cls('n1','done');
+
+  // 4. guardrail
+  setCap('🛡️ Safety check: action is safe → approved','var(--green)');
+  await move(590,180,690,180,500); wireLit('w2'); cls('n2','active');
+  detail({emoji:'🛡️',title:'Guardrail',what:'· plain Python, outside the LLM',accent:'green',
+    does:'Decides whether the proposed action is allowed to run at all.',
+    how:'Hard rule the LLM cannot override: destructive action AND confidence ≤ 0.85 → block. Here the action is non-destructive, so it passes.',
+    data:'action = create_pr_fix · destructive = <b>false</b> → <b>APPROVED</b>'});
+  await sleep(2000); cls('n2','done');
+
+  // 5. execute (down + back)
+  setCap('🚀 Opens a fix automatically','var(--green)');
+  await move(750,215,500,280,600); wireLit('w3'); cls('n3','done');
+  document.getElementById('act-label').textContent='PR opened';
+  detail({emoji:'🚀',title:'Executor + Reporter',what:'· tool registry',accent:'green',
+    does:'Runs the approved action, then records everything that happened.',
+    how:'Each action maps to a real tool (open PR, rollback, scale). Result is saved to PostgreSQL for the audit trail and MTTR metrics.',
+    data:'tool = create_pr_fix → <b>PR #482 opened</b> · status = <b>resolved</b> · persisted ✓'});
+  await sleep(1400);
+  await move(500,310,85,225,700); wireLit('wback');
+
+  // 6. store healthy
+  document.getElementById('store-emoji').textContent='🛒';
+  document.getElementById('store-state').textContent='✓ resolved';
+  document.getElementById('store-box').setAttribute('class','node-box done');
+  dot.setAttribute('opacity','0');
+  setCap('✅ Checkout back to normal','var(--green)');
+
+  showBoard('41 sec','$3,200','None');
+}
+
+async function runBlocked(){
+  document.getElementById('store-emoji').textContent='💥';
+  document.getElementById('store-state').textContent='DB CRITICAL';
+  document.getElementById('store-box').setAttribute('class','node-box blocked');
+  document.getElementById('store-emoji').textContent='💾';
+  setCap('💥 Database is failing — cause unclear','var(--red)');
+  detail({emoji:'💾',title:'Incoming signals',what:'· from the database',accent:'red',
+    does:'Conflicting metrics arrive — connections maxed, queries slow, but no single obvious culprit.',
+    how:'Same correlation step bundles the signals by trace_id before the agent looks at them.',
+    data:'connections <span class="bad">98%</span> · query_time <span class="bad">8.4s</span> · severity <span class="bad">critical</span>'});
+  await pulseStore(); await sleep(1600);
+
+  setCap('🔎 Agent detects: database overload','var(--blue)');
+  await move(130,180,250,180,500); wireLit('w0'); cls('n0','active');
+  detail({emoji:'🔎',title:'Detector',what:'· rule-based',accent:'blue',
+    does:'Classifies it as a database overload, critical severity.',
+    how:'Same deterministic heuristics — the type is clear even when the cause is not.',
+    data:'classification = <b>db_overload</b> · severity = <span class="bad">critical</span>'});
+  await sleep(1900); cls('n0','done');
+
+  setCap('🧠 No runbook fits → low confidence (70%)','var(--amber)');
+  await move(370,180,470,180,500); wireLit('w1'); cls('n1','active');
+  detail({emoji:'🧠',title:'Diagnose + RAG',what:'· LLM + knowledge base',accent:'amber',
+    does:'Tries to find a matching runbook — but none is a close enough match.',
+    how:'Best semantic match is too far (0.62 > 0.45 threshold) → flagged no_runbook_match. The LLM stays uncertain.',
+    data:'best match <span class="warn">0.62 ✗</span> · no_runbook_match = <b>true</b> · confidence <span class="warn">0.70</span>'});
+  await sleep(2200); cls('n1','done');
+
+  // action would be destructive
+  document.getElementById('act-emoji').textContent='♻️';
+  document.getElementById('act-label').textContent='Restart DB?';
+  setCap('♻️ Only fast option is destructive (restart DB)','var(--red)');
+  detail({emoji:'♻️',title:'Action Selector',what:'· LLM, structured output',accent:'red',
+    does:'Proposes the fastest remedy it can think of: restart the database.',
+    how:'It must declare whether the action is destructive. A restart drops live connections → destructive = true.',
+    data:'action = restart_db · destructive = <span class="bad">true</span> · confidence <span class="warn">0.70</span>'});
+  await sleep(2100);
+
+  setCap('🛡️ BLOCKED: destructive + low confidence','var(--red)');
+  await move(590,180,690,180,500); wireLit('w2'); cls('n2','blocked');
+  detail({emoji:'🛡️',title:'Guardrail',what:'· the hard stop',accent:'red',
+    does:'Refuses to let a risky action run on weak evidence.',
+    how:'Rule: destructive AND confidence ≤ 0.85 → BLOCK. 0.70 fails it. The LLM has no way around this — it is plain Python outside the model.',
+    data:'destructive = true · 0.70 ≤ 0.85 → <span class="bad">BLOCKED</span>'});
+  await sleep(2200);
+
+  // escalate
+  document.getElementById('act-emoji').textContent='📲';
+  document.getElementById('act-label').textContent='Escalated';
+  document.getElementById('n3').setAttribute('class','node-box active');
+  setCap('📲 Hands off to on-call — never breaks things when unsure','var(--green)');
+  detail({emoji:'📲',title:'Reporter → escalate',what:'· human-in-the-loop',accent:'green',
+    does:'Instead of acting, it pages the on-call engineer with the full picture already assembled.',
+    how:'The whole pipeline trace (signals, suspected cause, blocked action, confidence) is saved and attached, so the human decides in seconds — not from scratch.',
+    data:'paged on-call · context attached · action = <b>awaiting human approval</b>'});
+  await sleep(800);
+
+  showBoard('12 sec','Risk contained','Escalated');
+}
+
+function showBoard(a,b,c){
+  document.getElementById('s1').textContent=a;
+  document.getElementById('s2').textContent=b;
+  document.getElementById('s3').textContent=c;
+  document.getElementById('board').classList.add('show');
+}
+
+async function run(){
+  if(running) return; running=true;
+  document.getElementById('run').disabled=true;
+  resetAll(); await sleep(300);
+  if(current===0) await runAuto(); else await runBlocked();
+  running=false; document.getElementById('run').disabled=false;
+}
+
+document.getElementById('mode').addEventListener('click',e=>{
+  const c=e.target.closest('.chip'); if(!c||running) return;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on'); current=+c.dataset.s; resetAll();
+});
+document.getElementById('run').addEventListener('click',run);
+document.getElementById('reset').addEventListener('click',resetAll);
+resetAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIOps — Demo del pipeline de resolución de incidentes</title>
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --panel: #131a2b;
+    --panel-2: #1a2336;
+    --border: #243049;
+    --text: #e6edf6;
+    --muted: #8a99b3;
+    --accent: #4f9cff;
+    --green: #35d07f;
+    --amber: #ffb648;
+    --red: #ff5d6c;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: radial-gradient(1200px 800px at 70% -10%, #16203a 0%, var(--bg) 55%);
+    color: var(--text); font-family: var(--sans); min-height: 100vh; padding: 32px 24px 80px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .controls { display: flex; gap: 10px; align-items: center; margin: 20px 0 28px; }
+  button {
+    background: var(--accent); color: #021; border: 0; font-weight: 700; font-size: 14px;
+    padding: 10px 18px; border-radius: 9px; cursor: pointer; font-family: var(--sans);
+  }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button:disabled { opacity: .4; cursor: default; }
+  .clock { font-family: var(--mono); color: var(--amber); font-size: 14px; margin-left: auto; }
+
+  .layout { display: grid; grid-template-columns: 1fr 380px; gap: 22px; align-items: start; }
+  @media (max-width: 880px){ .layout { grid-template-columns: 1fr; } }
+
+  .pipeline { display: flex; flex-direction: column; gap: 0; }
+  .node {
+    position: relative; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; opacity: .45; transition: all .4s ease;
+  }
+  .node .row { display: flex; align-items: center; gap: 12px; }
+  .ico {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--panel-2);
+    display: grid; place-items: center; font-size: 18px; flex: 0 0 auto;
+  }
+  .node h3 { margin: 0; font-size: 15px; }
+  .node .tag { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .node .detail {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    margin: 10px 0 0 46px; max-height: 0; overflow: hidden; transition: max-height .45s ease, opacity .3s; opacity: 0;
+  }
+  .node.active { opacity: 1; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 30px -12px var(--accent); }
+  .node.done { opacity: 1; border-color: var(--green); }
+  .node.blocked { opacity: 1; border-color: var(--red); }
+  .node.active .detail, .node.done .detail, .node.blocked .detail { max-height: 240px; opacity: 1; }
+  .node .status { margin-left: auto; font-size: 12px; font-family: var(--mono); }
+  .node.active .status { color: var(--accent); }
+  .node.done .status { color: var(--green); }
+  .node.blocked .status { color: var(--red); }
+  .connector { height: 22px; width: 2px; background: var(--border); margin: 0 0 0 32px; transition: background .4s; }
+  .connector.lit { background: var(--green); }
+
+  .side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .card h4 { margin: 0 0 12px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  pre { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 1.55; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .k { color: var(--accent); } .s { color: var(--green); } .n { color: var(--amber); } .b { color: var(--red); }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .metric { background: var(--panel-2); border-radius: 9px; padding: 12px; }
+  .metric .v { font-size: 22px; font-weight: 800; font-family: var(--mono); }
+  .metric .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .pill { display:inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-family: var(--mono); }
+  .pill.ok { background: rgba(53,208,127,.15); color: var(--green); }
+  .pill.warn { background: rgba(255,182,72,.15); color: var(--amber); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>AIOps · Pipeline de resolución autónoma de incidentes</h1>
+      <div class="sub">Demo con datos dummy — un incidente recorre los 6 nodos del agente (LangGraph)</div>
+    </div>
+    <span class="pill warn">modo: heurístico/offline</span>
+  </header>
+
+  <div class="controls">
+    <button id="run">▶ Ejecutar incidente</button>
+    <button id="reset" class="ghost">Reiniciar</button>
+    <span class="clock" id="clock">+0 ms</span>
+  </div>
+
+  <div class="layout">
+    <div class="pipeline" id="pipeline"></div>
+
+    <div class="side">
+      <div class="card">
+        <h4>Incidente entrante (dummy)</h4>
+        <pre id="input"></pre>
+      </div>
+      <div class="card">
+        <h4>Salida del pipeline</h4>
+        <pre id="output">esperando ejecución…</pre>
+      </div>
+      <div class="card">
+        <h4>Métricas (acumuladas)</h4>
+        <div class="metrics">
+          <div class="metric"><div class="v" id="m-mttr">—</div><div class="l">MTTR último</div></div>
+          <div class="metric"><div class="v" id="m-status">—</div><div class="l">Estado</div></div>
+          <div class="metric"><div class="v" id="m-block">0%</div><div class="l">Block rate</div></div>
+          <div class="metric"><div class="v" id="m-count">0</div><div class="l">Incidentes</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NODES = [
+  { id:'detector', ico:'🔎', name:'Detector', tag:'heurística', status:'clasificando…',
+    detail:`classification = "high_error_rate"\nseverity_hint  = "high"\nsignals.error_rate = 0.12` },
+  { id:'diagnoser', ico:'🧠', name:'Diagnoser', tag:'RAG + LLM', status:'recuperando runbooks…',
+    detail:`query = title + signals + classification\nretrieved = ["high-error-rate.md"]  (cos=0.31 ≤ 0.45)\nroot_cause = "bad deploy / downstream timeout"\nconfidence = 0.80   no_runbook_match = false` },
+  { id:'action', ico:'⚙️', name:'Action Selector', tag:'structured output', status:'eligiendo acción…',
+    detail:`action      = "create_pr_fix"\ndestructive = false\nconfidence  = 0.80` },
+  { id:'guardrail', ico:'🛡️', name:'Guardrail', tag:'Python determinista', status:'validando…',
+    detail:`regla: destructive && confidence ≤ 0.85 → BLOCK\ndestructive=false  →  PASA\nblocked = false   reason = "ok"` },
+  { id:'executor', ico:'🚀', name:'Executor', tag:'tool registry', status:'ejecutando…',
+    detail:`tool = create_pr_fix\nmessage = "PR #482 opened (mock)"` },
+  { id:'reporter', ico:'📋', name:'Reporter', tag:'siempre corre', status:'persistiendo…',
+    detail:`status = "resolved"\npersistido en PostgreSQL (JSONB)` },
+];
+
+const INPUT = {
+  title: "High error rate on checkout",
+  trace_id: "a3f9-checkout-7c21",
+  signals: { error_rate: 0.12, p99_latency_ms: 1840 }
+};
+
+const pipeline = document.getElementById('pipeline');
+NODES.forEach((n, i) => {
+  const el = document.createElement('div');
+  el.className = 'node'; el.id = 'node-'+n.id;
+  el.innerHTML = `<div class="row">
+      <div class="ico">${n.ico}</div>
+      <div><h3>${n.name}</h3><div class="tag">${n.tag}</div></div>
+      <div class="status" id="st-${n.id}">⏳ pendiente</div>
+    </div>
+    <div class="detail">${n.detail}</div>`;
+  pipeline.appendChild(el);
+  if (i < NODES.length-1) {
+    const c = document.createElement('div'); c.className='connector'; c.id='conn-'+i; pipeline.appendChild(c);
+  }
+});
+
+document.getElementById('input').innerHTML = syntax(INPUT);
+
+let running = false, count = 0, blocks = 0;
+const clock = document.getElementById('clock');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function syntax(obj){
+  return JSON.stringify(obj, null, 2)
+    .replace(/"([^"]+)":/g, '<span class="k">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="s">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="n">$1</span>');
+}
+
+async function run(){
+  if (running) return; running = true; reset(false);
+  document.getElementById('run').disabled = true;
+  let t = 0;
+  const timings = [600, 1400, 700, 500, 900, 600];
+
+  for (let i=0; i<NODES.length; i++){
+    const n = NODES[i];
+    const node = document.getElementById('node-'+n.id);
+    node.classList.add('active');
+    document.getElementById('st-'+n.id).textContent = '● ' + n.status;
+
+    const dur = timings[i];
+    const start = t;
+    const tick = setInterval(()=>{ clock.textContent = '+'+(start + Math.min(dur, dur)).toFixed(0)+' ms'; }, 80);
+    for (let e=0; e<=dur; e+=40){ clock.textContent = '+'+(start+e)+' ms'; await sleep(40); }
+    clearInterval(tick);
+    t += dur;
+
+    node.classList.remove('active'); node.classList.add('done');
+    document.getElementById('st-'+n.id).textContent = '✓ ok';
+    if (i < NODES.length-1) document.getElementById('conn-'+i).classList.add('lit');
+  }
+
+  const OUT = {
+    incident_id: "fdb8936e-9a22-46fc",
+    status: "resolved",
+    duration_ms: t,
+    graph: {
+      detector:  { classification:"high_error_rate", severity_hint:"high" },
+      diagnosis: { root_cause:"bad deployment or downstream timeout", confidence:0.8 },
+      action:    { action:"create_pr_fix", destructive:false, confidence:0.8 },
+      guardrail: { blocked:false, reason:"ok" },
+      execution: { tool:"create_pr_fix", message:"PR #482 opened (mock)" }
+    }
+  };
+  document.getElementById('output').innerHTML = syntax(OUT);
+
+  count++;
+  document.getElementById('m-mttr').textContent = (t/1000).toFixed(1)+'s';
+  document.getElementById('m-status').textContent = 'resolved';
+  document.getElementById('m-status').style.color = 'var(--green)';
+  document.getElementById('m-block').textContent = Math.round(blocks/count*100)+'%';
+  document.getElementById('m-count').textContent = count;
+
+  running = false; document.getElementById('run').disabled = false;
+}
+
+function reset(full=true){
+  NODES.forEach((n,i)=>{
+    const node = document.getElementById('node-'+n.id);
+    node.classList.remove('active','done','blocked');
+    document.getElementById('st-'+n.id).textContent = '⏳ pendiente';
+    if (i < NODES.length-1) document.getElementById('conn-'+i).classList.remove('lit');
+  });
+  clock.textContent = '+0 ms';
+  if (full){ document.getElementById('output').textContent = 'esperando ejecución…'; }
+}
+
+document.getElementById('run').addEventListener('click', run);
+document.getElementById('reset').addEventListener('click', ()=>reset(true));
+</script>
+</body>
+</html>

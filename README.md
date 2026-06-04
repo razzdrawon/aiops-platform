@@ -8,6 +8,14 @@ E-commerce platforms lose revenue every minute an incident stays open. This syst
 
 ---
 
+## ▶ Live interactive demo
+
+[![AIOps interactive demo](docs/demo/preview.svg)](https://razzdrawon.github.io/aiops-platform/demo/aiops-visual.html)
+
+**[Open the live demo →](https://razzdrawon.github.io/aiops-platform/demo/aiops-visual.html)** — watch an incident flow through the agent node by node, with a live detail panel explaining each step. Two scenarios: *auto-resolved* and *blocked → escalated to human*. ([all demos](https://razzdrawon.github.io/aiops-platform/))
+
+---
+
 ![Problem and solution diagram](docs/aiops_problem_solution_diagram.svg)
 
 ---

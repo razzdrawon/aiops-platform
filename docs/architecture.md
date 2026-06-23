@@ -23,7 +23,7 @@ Kafka: incidents.correlated
   │
 Control API (:8000)
   │  POST /incident → run_incident_graph()
-  │  In-memory history; exposes MTTR + block-rate via GET /metrics/summary
+  │  Persists each incident to PostgreSQL; exposes MTTR + block-rate via GET /metrics/summary
   ▼
 LangGraph Pipeline
   Detector → Diagnoser → Action Selector → Guardrail
@@ -114,7 +114,7 @@ The architecture is designed so that each layer can be upgraded independently wi
 
 **Guardrail policies.** `validate_action()` is a single function. Extending it to enforce rate limits, cross-incident deduplication, or service-specific confidence floors requires adding logic to one file with no graph changes.
 
-**Persistence.** The API uses an in-memory list with an asyncio lock. Production replacement: write each `IncidentState` to Postgres (or append to S3) after `reporter_node` completes. The graph returns the full state; serialization is a post-graph step.
+**Persistence.** Each completed `IncidentState` is written to PostgreSQL via the `SQLAlchemyIncidentRepository` after `reporter_node` finishes — the graph returns the full state and serialization is a post-graph step. The structured fields (`signals`, `diagnosis`, `action`, `guardrail`, `execution`, `trace`) are stored as JSONB. A future extension could additionally append raw state to S3 for cold storage.
 
 **Observability.** The simulator is already OTel-instrumented (traces and metrics). Wiring the pipeline nodes to emit spans via `opentelemetry-api` would give end-to-end trace context from the Kafka message to the executed tool — no architectural change, just instrumentation.
 

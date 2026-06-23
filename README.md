@@ -153,7 +153,7 @@ The pipeline runs fully offline (heuristic mode) when API keys are absent.
 |---|---|---|
 | 1 — Foundation | Clean architecture, PostgreSQL persistence, tests, CI | ✅ Complete |
 | 2 — Evaluation Framework | Synthetic cases, accuracy/precision/recall measurement | ✅ Complete |
-| 3 — Agent Observability | Token usage, cost per incident, latency per node | ✅ Complete |
+| 3 — Agent Observability | Token usage, cost per incident, latency per node (in-process; distributed tracing → Phase 5) | ✅ Complete |
 | 4 — Streaming + Integrations | SSE streaming, PagerDuty webhooks, Slack notifications | ⏳ Next |
 | 5 — Production Readiness | Prometheus metrics, Grafana dashboard, Redis caching, API key auth, rate limiting | 🗓 Planned |
 | 6 — Cloud Deployment | Terraform (AWS ECS + RDS + MSK), multi-env config, secrets management, CD pipeline | 🗓 Planned |

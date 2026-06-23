@@ -33,10 +33,7 @@ dependencies = [
     # HTTP client
     "httpx>=0.28.0",
 
-    # Streaming
-    "sse-starlette>=2.1.0",
-
-    # Observability
+    # Observability (used by the OTel-instrumented simulator; agent-pipeline OTel spans land in Phase 5)
     "opentelemetry-api>=1.28.0",
     "opentelemetry-sdk>=1.28.0",
     "opentelemetry-instrumentation-fastapi>=0.49b0",

@@ -1,0 +1,38 @@
+# Keep the build context small and the image clean.
+# Anything not needed to build/run the app should be excluded.
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+dist/
+build/
+
+# Local secrets & env (provided at runtime, never baked into the image)
+.env
+.env.*
+!.env.example
+
+# Tests & evals are not needed in the runtime image
+tests/
+
+# Docs, demos, IaC — irrelevant to the app image
+docs/
+*.md
+!app/knowledge/runbooks/*.md
+terraform/
+.github/
+
+# Git & editor noise
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+*.log

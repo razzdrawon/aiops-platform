@@ -49,5 +49,44 @@ services:
       retries: 5
       start_period: 20s
 
+  # One-shot: apply DB migrations, then exit. The app waits for this to finish.
+  # Mirrors how migrations run as a separate task in ECS (never on app boot,
+  # to avoid races when several app instances start at once).
+  migrate:
+    build:
+      context: .
+      target: runtime
+    image: aiops-app:local
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://aiops_user:aiops_pass@db:5432/aiops
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runtime
+    image: aiops-app:local
+    container_name: aiops_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://aiops_user:aiops_pass@db:5432/aiops
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    # Secrets (OPENAI_API_KEY, PINECONE_API_KEY, ...) come from .env if present.
+    # The app runs fully offline when they are absent.
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
 volumes:
   postgres_data:

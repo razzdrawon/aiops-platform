@@ -1,0 +1,22 @@
+# Terraform state — never commit (may contain secrets, and is environment-owned)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Provider plugins & local init artifacts
+.terraform/
+.terraform.tfstate.lock.info
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Secret var files — only non-secret terraform.tfvars is committed
+*.auto.tfvars
+secrets.tfvars
+*.tfvars.json
+
+# Plan output files
+*.tfplan
+
+# NOTE: .terraform.lock.hcl IS committed on purpose (pins provider versions).

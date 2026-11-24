@@ -1,5 +1,5 @@
 """
-Shared test fixtures.
+Integration test fixtures.
 
 Integration tests use a real PostgreSQL database (TEST_DATABASE_URL).
 Tables are assumed to exist (created by `alembic upgrade head` before running tests).

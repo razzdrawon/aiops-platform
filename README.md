@@ -1,5 +1,7 @@
 # AIOps Platform — Autonomous Incident Resolution
 
+[![CI](https://github.com/razzdrawon/aiops-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/razzdrawon/aiops-platform/actions/workflows/ci.yml)
+
 An AI agent that takes an incident (logs, metrics, traces), finds the likely root cause using your runbooks, picks a remediation, and runs it only if deterministic safety rules allow it.
 
 [![AIOps interactive demo](docs/demo/preview.svg)](https://razzdrawon.github.io/aiops-platform/demo/aiops-visual.html)
